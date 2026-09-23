@@ -395,8 +395,12 @@
     gate.showModal();
     setTimeout(() => $('#gateA').focus(), 50);
   }
+  $('#gateLeave').onclick = () => gate.close();
+  // Enter in the answer box always means Enter, never the first button in the form
+  $('#gateA').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('#gateForm').requestSubmit($('#gateGo')); }
+  });
   $('#gateForm').addEventListener('submit', e => {
-    if (e.submitter && e.submitter.value === 'cancel') return;
     e.preventDefault();
     const a = norm($('#gateA').value);
     const msg = $('#gateMsg');
