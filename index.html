@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Helsinki, Emma edition</title>
+<meta name="description" content="3 days, 2 nights, 4 girls: the Helsinki trip plan and map for Emma's bachelorette, 2–4 October 2026.">
+<meta property="og:title" content="Helsinki, Emma edition">
+<meta property="og:description" content="The plan, the map, the moments. 2–4 October 2026.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥂</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="brand">
+    <button class="logo" id="logo" aria-label="Emma">🥂</button>
+    <div>
+      <h1>Helsinki, <em>Emma edition</em></h1>
+      <p class="dates">Fri 2 – Sun 4 October 2026 · 4 of us</p>
+    </div>
+  </header>
+  <aside class="side">
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="plan" aria-selected="true">Plan</button>
+      <button role="tab" data-tab="moments">Moments</button>
+      <button role="tab" data-tab="bingo">Bingo</button>
+      <button role="tab" data-tab="budget">Budget</button>
+      <button role="tab" data-tab="secret" id="secretTab" hidden>🔓 Traditions</button>
+    </nav>
+
+    <section class="panel" id="panel-plan">
+      <div class="days" id="days"></div>
+      <div id="dayView"></div>
+      <div class="callout">
+        <strong>The special occasion:</strong> the <a href="https://silakkamarkkinat.fi/en/" target="_blank" rel="noopener">Baltic Herring Market</a>, Helsinki's oldest festival (since 1743), opens in Market Square on <b>Sunday 4 Oct</b>, the day you fly home.
+      </div>
+      <p class="fine">Everything that is <em>not</em> in the plan is still on the map: tap the dots to swap things in. Prices are per person, approximate, and worth re-checking before you book.</p>
+    </section>
+
+    <section class="panel" id="panel-moments" hidden>
+      <p class="lede">Cheap little rituals that make the trip. Tap one to see where it happens.</p>
+      <div id="moments"></div>
+    </section>
+
+    <section class="panel" id="panel-bingo" hidden>
+      <p class="lede">Polttari bingo. Tap a square when it happens. First full line picks Emma's next karaoke song.</p>
+      <div class="bingo" id="bingo"></div>
+      <button class="ghost" id="bingoReset">Shuffle a new card</button>
+    </section>
+
+    <section class="panel" id="panel-budget" hidden>
+      <div id="budget"></div>
+    </section>
+
+    <section class="panel" id="panel-secret" hidden>
+      <div id="secret"></div>
+    </section>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map" aria-label="Map of Helsinki"></div>
+    <div class="filters" id="filters"></div>
+    <article class="detail" id="detail" hidden></article>
+  </main>
+</div>
+
+<dialog id="gate">
+  <form method="dialog" id="gateForm">
+    <p class="gate-kicker">Restricted · admin only</p>
+    <h2>Security question</h2>
+    <p id="gateQ"></p>
+    <input id="gateA" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Answer">
+    <p id="gateMsg" class="gate-msg" aria-live="polite"></p>
+    <div class="gate-row">
+      <button value="cancel" class="ghost" formnovalidate>Leave</button>
+      <button id="gateGo" value="default">Enter</button>
+    </div>
+  </form>
+</dialog>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data.js"></script>
+<script src="admin.enc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
