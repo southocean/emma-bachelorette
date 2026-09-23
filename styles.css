@@ -160,11 +160,12 @@ button.body:hover { border-color: var(--dc); }
 .leaflet-marker-icon.dim { opacity: .35; }
 .leaflet-tooltip.tip {
   background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
-  padding: 8px 10px; max-width: 240px; white-space: normal; font: 13px/1.4 'DM Sans', sans-serif;
+  padding: 8px 10px; width: max-content; max-width: 260px; white-space: normal; font: 13px/1.4 'DM Sans', sans-serif;
 }
 .leaflet-tooltip.tip b { display: block; font-size: 13.5px; }
 .leaflet-tooltip.tip .c { color: var(--accent); font-weight: 700; font-size: 12px; }
 .leaflet-tooltip-top.tip::before { border-top-color: var(--surface); }
+.leaflet-tooltip-bottom.tip::before { border-bottom-color: var(--surface); }
 .leaflet-container { font-family: 'DM Sans', sans-serif; }
 .leaflet-control-attribution { font-size: 10px; }
 

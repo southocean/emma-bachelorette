@@ -56,6 +56,11 @@
 
   PLACES.forEach(p => {
     const m = L.marker([p.lat, p.lng], { icon: iconFor(p, 'sat'), riseOnHover: true })
+      // pins near the top would put the tooltip under the filter chips, so open those downwards
+      .on('mouseover', () => {
+        const low = map.latLngToContainerPoint(m.getLatLng()).y < 190;
+        Object.assign(m.getTooltip().options, low ? { direction: 'bottom', offset: [0, 12] } : { direction: 'top', offset: [0, -12] });
+      })
       .bindTooltip(`<b>${esc(p.name)}</b>${esc(p.hook)}<br><span class="c">${esc(p.cost)}</span>`,
         { className: 'tip', direction: 'top', offset: [0, -12], opacity: 1 })
       .on('click', () => select(p.id, { fly: false }));
