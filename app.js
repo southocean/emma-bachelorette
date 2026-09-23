@@ -299,7 +299,7 @@
         <tfoot><tr><td>Whole trip</td><td>≈ €${Math.round(total)}</td></tr></tfoot>
       </table>
       <div class="callout"><strong>Where the money goes:</strong> the buffet, the sauna and the karaoke drinks are about half of it. Everything that makes the trip memorable (the spray, the merch, the dance video, the letters, the bingo) costs almost nothing.</div>
-      <p class="fine"><b>Cheaper still:</b> swap Kotiharju for the free Sompasauna (−€20), make the karaoke a pre-drinks-at-home night (−€10), and have breakfast at home both days. <b>Treat Emma:</b> the others split her share of the buffet and sauna (≈ €15 each).</p>
+      <p class="fine"><b>Cheaper still:</b> swap Kotiharju for the free Sompasauna (−€20), make the karaoke a pre-drinks-at-home night (−€10), and have breakfast at home both days. <b>Treat Emma:</b> the others split her share of the buffet and sauna (≈ €17 each).</p>
       <p class="fine"><b>Remember:</b> Alko (the only shop for wine) is closed on Sunday. Buy the bubbles by Saturday 18:00.</p>`;
   }
 

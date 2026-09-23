@@ -56,13 +56,13 @@ window.PLACES = [
     url: 'https://oodihelsinki.fi/en/services/urban-workshop/',
   },
   {
-    id: 'nom', name: 'NOM Vietnamese Kitchen — the buffet?', cat: 'eat', lat: 60.1628, lng: 24.9418,
+    id: 'queem', name: 'Quê Em — the Vietnamese buffet', cat: 'eat', lat: 60.1682, lng: 24.9342,
     plan: { day: 'sat', step: 2 },
-    hook: 'Our one fixed point: Vietnamese buffet (weekend buffet brunch)',
-    what: 'The trip\'s only fixed booking. NOM on Iso Roobertinkatu is known for its weekend buffet brunch — if this is "the" buffet, Saturday late morning is the ideal slot: the biggest meal of the day, right before the busiest afternoon. If the buffet you mean is Quê Em instead (also on the map), swap it in — it is 10 minutes\' walk away.',
-    cost: '≈ €20–30 (confirm)', costPP: 25, time: '1–1.25 h', energy: 1,
-    tips: ['Book a table for 4 and confirm buffet days and price: +358 50 357 8765.', 'Iso Roobertinkatu is a pedestrian street full of little shops — nice slow walk after.'],
-    url: 'https://www.nomvietnamesekitchen.fi/',
+    hook: 'Our one fixed point: all-you-can-eat Vietnamese buffet, €29.90',
+    what: 'The trip\'s one fixed booking. On weekends Quê Em puts out a full Vietnamese buffet: bánh mì, phở, summer rolls, noodle and rice dishes, plus desserts and drinks. It runs 11:00–15:00 on Saturday, a 10-minute walk from Oodi: the biggest meal of the day, right before the busiest afternoon.',
+    cost: '€29.90 buffet', costPP: 30, time: '1–1.25 h', energy: 1,
+    tips: ['Buffet: Sat 11:00–15:00, Sun 11:00–16:00. Their website and booking page call it "Brunch", so that is what to pick when booking. The site also lists the doors as opening at 12:00 on Saturdays, so confirm the start time.', 'Book a table for 4 online (tableonline.fi) or on 050 468 6661 / info@queem.fi.', 'Kansakoulukatu 1, right by Kamppi.'],
+    url: 'https://queem.fi/en/menu/brunch/',
   },
   {
     id: 'senate', name: 'Senate Square & the Cathedral steps', cat: 'make', lat: 60.1697, lng: 24.9522,
@@ -159,11 +159,12 @@ window.PLACES = [
 
   // ───────── Alternatives ─────────
   {
-    id: 'queem', name: 'Quê Em — Vietnamese buffet', cat: 'eat', lat: 60.1668, lng: 24.9310,
-    hook: 'The other Vietnamese buffet in town — is this the one?',
-    what: 'Regulars come here for the buffet. If this is the restaurant on your list, swap it into Saturday\'s brunch slot or do Friday night if you land early enough.',
-    cost: '≈ €15–25 (confirm)', costPP: 20, time: '1 h', energy: 1,
-    tips: ['Kansakoulukatu 1, by Kamppi.'],
+    id: 'nom', name: 'NOM Vietnamese Kitchen', cat: 'eat', lat: 60.1628, lng: 24.9418,
+    hook: 'Another Vietnamese restaurant, in the Design District',
+    what: 'A backup if Quê Em is fully booked. NOM on Iso Roobertinkatu also has a weekend menu.',
+    cost: '≈ €20–30', costPP: 25, time: '1 h', energy: 1,
+    tips: ['Iso Roobertinkatu is a pedestrian street full of little shops.'],
+    url: 'https://www.nomvietnamesekitchen.fi/',
   },
   {
     id: 'oldhall', name: 'Old Market Hall', cat: 'eat', lat: 60.1657, lng: 24.9508,
@@ -179,7 +180,7 @@ window.PLACES = [
   },
   {
     id: 'ekberg', name: 'Café Ekberg', cat: 'eat', lat: 60.1640, lng: 24.9390,
-    hook: 'Helsinki\'s oldest café (1852) — brunch & pastries',
+    hook: 'Helsinki\'s oldest café (1852) — breakfast & pastries',
     what: 'Classic Finnish bakery-café on Bulevardi. Good for a proper sit-down breakfast if you want one instead of eating in.',
     cost: '≈ €8–20', costPP: 12, time: '45 min', energy: 1, tips: [],
   },
@@ -211,7 +212,7 @@ window.PLACES = [
     id: 'restroom', name: 'Restroom Karaoke', cat: 'night', lat: 60.1588, lng: 24.9452,
     hook: 'A tiny karaoke bar inside a 1952 public toilet',
     what: 'Exactly what it sounds like: a converted 1952 public toilet, now one of the smallest and quirkiest karaoke bars in town, in posh Ullanlinna. Great story, very small — crowded on weekend nights.',
-    cost: 'Free entry · drinks', costPP: 15, time: '1–2 h', energy: 3, tips: ['Close to NOM if you want karaoke earlier in the day.'],
+    cost: 'Free entry · drinks', costPP: 15, time: '1–2 h', energy: 3, tips: [],
   },
   {
     id: 'annak', name: 'Anna K Karaoke', cat: 'night', lat: 60.1664, lng: 24.9370,
@@ -284,7 +285,7 @@ window.PLACES = [
   {
     id: 'design', name: 'Design District & Iso Roobertinkatu', cat: 'see', lat: 60.1632, lng: 24.9440,
     hook: 'Vintage shops, Finnish design, the Design Museum',
-    what: 'Streets full of small design shops, vintage stores and cafés between NOM and the Esplanade. Thrift tees for the Oodi merch here.',
+    what: 'Streets full of small design shops, vintage stores and cafés between Iso Roobertinkatu and the Esplanade. Thrift tees for the Oodi merch here.',
     cost: 'Free to browse', costPP: 0, time: '1 h', energy: 1, tips: ['UFF and other second-hand shops for €5 tees.'],
   },
   {
@@ -342,7 +343,7 @@ window.PLAN = {
     steps: [
       { t: '09:00', place: null, do: 'Slow breakfast at home (supermarket Karelian pies + coffee). Buy the HSL day ticket.' },
       { t: '10:00', place: 'oodi', do: 'Make the team merch: badges + iron-on tees/totes.' },
-      { t: '11:45', place: 'nom', do: 'Vietnamese buffet brunch — the one fixed point.' },
+      { t: '11:45', place: 'queem', do: 'The Vietnamese buffet at Quê Em — the one fixed point.' },
       { t: '13:15', place: 'senate', do: 'Dance video on the Cathedral steps, in the merch. Optional: Emma busks one song on Esplanadi on the way.' },
       { t: '14:00', place: 'ferry', do: 'Ferry to Suomenlinna.' },
       { t: '14:20', place: 'suomenlinna', do: 'Walk to the sea cliffs, champagne spray, then wander slowly back. Ferry ~16:20.' },
