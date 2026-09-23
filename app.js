@@ -441,6 +441,25 @@
     if (!quiet) { showTab('secret'); confetti(); }
   }
 
+  // ── light / dark ───────────────────────────────────────
+  const themeBtn = $('#theme');
+  const sysDark = matchMedia('(prefers-color-scheme: dark)');
+  const current = () => document.documentElement.dataset.theme || (sysDark.matches ? 'dark' : 'light');
+  function paintTheme() {
+    const d = current() === 'dark';
+    themeBtn.textContent = d ? '☀️' : '🌙';
+    themeBtn.title = d ? 'Light mode' : 'Dark mode';
+  }
+  themeBtn.onclick = () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    store.set('emma_theme', next);
+    paintTheme();
+    route?.setStyle({ color: getComputedStyle(document.documentElement).getPropertyValue(`--${day}`).trim() });
+  };
+  sysDark.addEventListener?.('change', paintTheme);
+  paintTheme();
+
   // ── boot ───────────────────────────────────────────────
   renderBudget();
   setDay('sat');
