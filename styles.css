@@ -769,3 +769,4 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 /* "in Helsinki" is the plain part: ink, upright; Emma carries the pink italic */
 .lockup .lk-new em { color: var(--ink); font-style: normal; }
 .bingoed .lockup .lk-new em { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); animation: none; }
+.lockup .lk-new { margin-left: .08em; } /* the italic a leans into the space before 'in' */
