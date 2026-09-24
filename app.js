@@ -725,8 +725,12 @@
     if (!playing) return 0;
     const cells = cardFor(bingo.seed), hit = new Set(bingo.hits);
     const won = lines.filter(l => l.every(i => hit.has(i))), winCells = new Set(won.flat());
+    // each winning cell knows its place along its line (0–4): the sheen travels along the
+    // line in that order, and the first line spells B-I-N-G-O
+    const pos = {}, letter = {};
+    won.forEach((l, li) => l.forEach((i, k) => { if (!(i in pos)) pos[i] = k; if (li === 0) letter[i] = 'BINGO'[k]; }));
     $('#bingo').innerHTML = cells.map((c, i) =>
-      `<button data-i="${i}" data-k="${c.k}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}" title="${c.k === 'dare' ? 'Dare: only if you did it' : 'Moment: if it happened'}"><span class="bk" aria-hidden="true">${c.k === 'dare' ? '🎯' : '✨'}</span>${esc(c.t)}</button>`).join('');
+      `<button data-i="${i}" data-k="${c.k}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}"${winCells.has(i) ? ` style="--k:${pos[i]}" data-letter="${letter[i] || ''}"` : ''} title="${c.k === 'dare' ? 'Dare: only if you did it' : 'Moment: if it happened'}"><span class="bk" aria-hidden="true">${c.k === 'dare' ? '🎯' : '✨'}</span><span class="bt">${esc(c.t)}</span></button>`).join('');
     $('#bingoWon').hidden = !won.length;
     if (celebrate != null && won.length > celebrate) confetti();
     return won.length;
