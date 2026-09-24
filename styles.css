@@ -760,3 +760,9 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   .detail .clock.big .face { filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
   .detail h2 { padding-right: 76px; }
 }
+/* the whole title is the pink italic: "Emma" too */
+.lockup .lk-emma { color: var(--accent); font-style: italic; }
+.bingoed .lockup .lk-emma {
+  background: linear-gradient(90deg, #f6c453, #e2527c, #f08a5d, #f6c453); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: bingoShift 6s linear infinite;
+}
