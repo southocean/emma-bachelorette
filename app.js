@@ -109,16 +109,19 @@
     }).addTo(map);
     const fit = pts.length > 1 ? pts : pts.concat(byId.station);
     map.fitBounds(L.latLngBounds(fit.map(p => [p.lat, p.lng])), {
-      paddingTopLeft: [30, 70], paddingBottomRight: [30, isPhone() ? 30 : 30], maxZoom: 15,
+      paddingTopLeft: [30, isPhone() ? 110 : 70], paddingBottomRight: [30, 30], maxZoom: 15,
     });
   }
 
   // ── detail card ────────────────────────────────────────
   let sel = null;
   let origin = null;
+  let viaSearch = false; // was the open card picked from the search list?
   const dEl = $('#detail');
-  function select(id, { fly = true } = {}) {
+  function select(id, { fly = true, fromSearch = false } = {}) {
     const p = byId[id]; if (!p) return;
+    viaSearch = fromSearch;
+    closeResults();
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = id;
     const m = markers[id];
@@ -152,8 +155,8 @@
     dEl.hidden = false;
     dEl.scrollTop = 0;
     reveal(p, fly);
-    $('.x', dEl).onclick = closeDetail;
-    $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false }); };
+    $('.x', dEl).onclick = dismissCard;
+    $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
   }
   // Keep the chosen place visible beside the card instead of underneath it.
   function reveal(p, fly) {
@@ -164,7 +167,7 @@
     const wide = !isPhone();
     const free = wide
       ? { x: (card.left - mapBox.left) / 2, y: size.y / 2 }
-      : { x: size.x / 2, y: (card.top - mapBox.top + 44) / 2 };
+      : { x: size.x / 2, y: (card.top - mapBox.top + 100) / 2 }; // below the search box and chips
     const pt = map.project([p.lat, p.lng], z);
     const inView = map.latLngToContainerPoint([p.lat, p.lng]);
     const covered = wide ? inView.x > card.left - mapBox.left - 20 : inView.y > card.top - mapBox.top - 20;
@@ -177,13 +180,129 @@
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = null;
   }
-  map.on('click', closeDetail);
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !dEl.hidden) closeDetail(); });
+  // ✕ (or Escape) on a card that came from the search brings the result list back
+  function dismissCard() {
+    closeDetail();
+    if (viaSearch && searchQ()) openResults();
+  }
+  map.on('click', () => { closeDetail(); closeResults(); });
+  addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!dEl.hidden) dismissCard(); else if (resultsOpen) closeResults();
+  });
 
   function focusPlace(id) {
     select(id);
     if (isPhone()) scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  // ── search ─────────────────────────────────────────────
+  // Searches every place and activity, including ones hidden by the filters.
+  // Picking a result folds the list away so the card has the room; closing the
+  // card with ✕ unfolds the same list again.
+  const fold = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+  const momentsAt = {};
+  MOMENTS.forEach(m => { if (m.where) (momentsAt[m.where] ||= []).push(m.name + ' ' + m.how); });
+  const index = PLACES.map(p => ({
+    p,
+    name: fold(p.name),
+    hook: fold(p.hook),
+    rest: fold([p.what, p.tips.join(' '), p.cost, CATS[p.cat].label, (momentsAt[p.id] || []).join(' '),
+      (planIndex[p.id] || []).map(h => PLAN[h.day].label).join(' ') || 'alternative'].join(' ')),
+  }));
+  const qEl = $('#q'), rEl = $('#results'), qClear = $('#qClear');
+  let resultsOpen = false, active = -1, shown = [];
+  const searchQ = () => qEl.value.trim();
+
+  function search(q) {
+    const terms = fold(q).split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return index.map(e => {
+      let score = 0;
+      for (const t of terms) {
+        const word = new RegExp('(^|[^a-z0-9])' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        if (e.name.includes(t)) score += e.name.startsWith(t) || e.name.includes(' ' + t) ? 6 : 4;
+        else if (word.test(e.hook)) score += 2; // descriptions only match at the start of a word
+        else if (word.test(e.rest)) score += 1;
+        else return null; // every word has to match somewhere
+      }
+      if ((planIndex[e.p.id] || []).length) score += .5; // plan stops first on a tie
+      return { p: e.p, score };
+    }).filter(Boolean).sort((a, b) => b.score - a.score).map(r => r.p);
+  }
+
+  function mark(text, q) {
+    // highlight the query words in the name, accent-insensitively
+    const f = fold(text), hits = new Array(text.length).fill(false);
+    fold(q).split(/\s+/).filter(Boolean).forEach(t => {
+      let i = f.indexOf(t);
+      while (i !== -1) { for (let k = i; k < i + t.length; k++) hits[k] = true; i = f.indexOf(t, i + 1); }
+    });
+    let out = '', open = false;
+    [...text].forEach((ch, i) => {
+      if (hits[i] && !open) { out += '<mark>'; open = true; }
+      if (!hits[i] && open) { out += '</mark>'; open = false; }
+      out += esc(ch);
+    });
+    return out + (open ? '</mark>' : '');
+  }
+
+  function renderResults() {
+    const q = searchQ();
+    shown = search(q);
+    active = shown.length ? 0 : -1;
+    rEl.innerHTML = shown.length
+      ? shown.map((p, i) => {
+          const hits = planIndex[p.id] || [];
+          const color = hits.length ? DAYC[hits[0].day] : CATS[p.cat].color;
+          const where = hits.length
+            ? hits.map(h => `${PLAN[h.day].label} · stop ${h.n}`).join(', ')
+            : `${CATS[p.cat].label} · alternative`;
+          return `<li role="option" id="r-${p.id}" data-id="${p.id}" aria-selected="${i === active}">
+            <i style="background:${color}"></i>
+            <span><b>${mark(p.name, q)}</b><small>${esc(where)} · ${esc(p.cost)}</small></span>
+          </li>`;
+        }).join('')
+      : `<li class="none">Nothing matches “${esc(q)}”.</li>`;
+    qEl.setAttribute('aria-activedescendant', active >= 0 ? 'r-' + shown[active].id : '');
+  }
+  function openResults() {
+    if (!searchQ()) return closeResults();
+    if (!dEl.hidden) closeDetail(); // the list and the card share the same corner
+    renderResults();
+    rEl.hidden = false; resultsOpen = true;
+    qEl.setAttribute('aria-expanded', 'true');
+  }
+  function closeResults() {
+    rEl.hidden = true; resultsOpen = false;
+    qEl.setAttribute('aria-expanded', 'false');
+  }
+  function moveActive(d) {
+    if (!shown.length) return;
+    active = (active + d + shown.length) % shown.length;
+    rEl.querySelectorAll('[role=option]').forEach((li, i) => li.setAttribute('aria-selected', i === active));
+    rEl.children[active].scrollIntoView({ block: 'nearest' });
+    qEl.setAttribute('aria-activedescendant', 'r-' + shown[active].id);
+  }
+  function pickResult(id) {
+    qEl.blur();
+    select(id, { fromSearch: true });
+  }
+
+  qEl.addEventListener('input', () => { qClear.hidden = !qEl.value; openResults(); });
+  qEl.addEventListener('focus', () => { if (searchQ() && !resultsOpen && dEl.hidden) openResults(); });
+  qEl.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!resultsOpen) openResults(); else moveActive(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (resultsOpen && active >= 0) pickResult(shown[active].id); else openResults(); }
+    else if (e.key === 'Escape') {
+      e.stopPropagation();
+      if (resultsOpen) closeResults(); else { qEl.value = ''; qClear.hidden = true; }
+    }
+  });
+  rEl.addEventListener('mousedown', e => e.preventDefault()); // keep focus in the box while clicking
+  rEl.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (li) pickResult(li.dataset.id); });
+  qClear.onclick = () => { qEl.value = ''; qClear.hidden = true; closeResults(); qEl.focus(); };
 
   // ── plan tab ───────────────────────────────────────────
   const daysEl = $('#days');

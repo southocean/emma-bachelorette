@@ -67,6 +67,12 @@
   <main class="mapwrap">
     <div id="map" aria-label="Map of Helsinki"></div>
     <div class="filters" id="filters"></div>
+    <div class="search">
+      <input id="q" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="results"
+        placeholder="Search places & activities" aria-label="Search places and activities" autocomplete="off" spellcheck="false">
+      <button id="qClear" class="qclear" aria-label="Clear search" hidden>✕</button>
+      <ul id="results" role="listbox" aria-label="Search results" hidden></ul>
+    </div>
     <article class="detail" id="detail" hidden></article>
   </main>
 </div>
