@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Helsinki, Emma edition</title>
+<title>Emma in Helsinki</title>
 <meta name="description" content="3 days, 2 nights, 4 girls: the Helsinki trip plan and map for Emma's bachelorette, 2–4 October 2026.">
-<meta property="og:title" content="Helsinki, Emma edition">
+<meta property="og:title" content="Emma in Helsinki">
 <meta property="og:description" content="The plan, the map, the moments. 2–4 October 2026.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥂</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
   <header class="brand">
     <button class="logo" id="logo" aria-label="Emma">🥂</button>
     <div>
-      <h1>Helsinki, <em>Emma edition</em></h1>
+      <h1 class="lockup" id="lockup" aria-label="Emma in Helsinki"><span class="lk-emma">Emma</span><span class="lk-old"><em>’s bachelorette</em></span><span class="lk-new"><em>&nbsp;in Helsinki</em></span></h1>
       <p class="dates">Fri 2 – Sun 4 October 2026 · 4 of us</p>
     </div>
     <button class="theme" id="theme" aria-label="Switch light or dark mode"></button>
@@ -56,13 +56,14 @@
     </section>
 
     <footer class="foot">
-      <p>Made by Nam with love. · © 2026 · For Emma's Helsinki weekend, 2–4 October 2026 · Updated 24 Sep 2026 · Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · <a href="https://github.com/southocean/emma-bachelorette" target="_blank" rel="noopener">Source</a></p>
+      <p><span class="foot-short">Made by Nam with love. · © 2026</span><span class="foot-more"> · For Emma's Helsinki weekend, 2–4 October 2026 · Updated 24 Sep 2026 · Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · <a href="https://github.com/southocean/emma-bachelorette" target="_blank" rel="noopener">Source</a></span></p>
     </footer>
   </aside>
 
   <main class="mapwrap">
     <div id="map" aria-label="Map of Helsinki"></div>
     <div class="filters" id="filters"></div>
+    <div class="mdays-slot" id="mdaysSlot"></div>
     <div class="times" id="times" aria-label="The day, hour by hour"></div>
     <div class="clock" id="clock" hidden aria-hidden="true">
       <svg viewBox="0 0 40 40" class="face">
@@ -84,6 +85,11 @@
     <article class="detail" id="detail" hidden></article>
   </main>
 </div>
+
+<dialog id="sheet" class="modal" aria-labelledby="sheetTitle">
+  <header class="modal-head"><h2 id="sheetTitle"></h2><button class="x" id="sheetClose" aria-label="Close">✕</button></header>
+  <div id="sheetBody"></div>
+</dialog>
 
 <dialog id="bingoModal" class="modal" aria-labelledby="bingoTitle">
   <header class="modal-head">

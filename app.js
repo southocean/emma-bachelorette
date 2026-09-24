@@ -176,6 +176,7 @@
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
     dEl.style.setProperty('--dc', DAYC[day]);
+    if (isPhone()) { clockEl.classList.remove('big'); dEl.appendChild(clockEl); } // re-rendering the card removed it
     dEl.hidden = false;
     dEl.scrollTop = 0;
     reveal(p, fly);
@@ -288,6 +289,7 @@
   });
 
   function focusPlace(id) {
+    if (sheet.open) sheet.close();
     select(id);
     if (isPhone()) scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -803,11 +805,32 @@
   // ── tabs ───────────────────────────────────────────────
   const tabs = $('.tabs');
   function showTab(name) {
+    if (isPhone() && name !== 'plan') { openSheet(name); return; }
     tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
-    document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== `panel-${name}`; });
-    daysEl.hidden = name !== 'plan';
-    store.set('emma_tab', name);
+    document.querySelectorAll('.side .panel').forEach(p => { p.hidden = p.id !== `panel-${name}`; });
+    daysEl.hidden = !isPhone() && name !== 'plan';
+    if (!isPhone()) store.set('emma_tab', name);
   }
+  // ── phones: tab panels open in a popup, and go back to the side panel on close ──
+  const sheet = $('#sheet'), sheetBody = $('#sheetBody');
+  let sheetPanel = null, sheetHome = null;
+  function openSheet(name) {
+    const panel = $(`#panel-${name}`); if (!panel) return;
+    if (sheet.open) sheet.close();
+    sheetPanel = panel; sheetHome = { parent: panel.parentNode, next: panel.nextSibling };
+    sheetBody.appendChild(panel); panel.hidden = false;
+    $('#sheetTitle').textContent = tabs.querySelector(`[data-tab="${name}"]`).textContent.replace('🔓', '').trim();
+    sheet.showModal(); sheet.scrollTop = 0;
+  }
+  sheet.addEventListener('close', () => {
+    if (!sheetPanel) return;
+    sheetHome.parent.insertBefore(sheetPanel, sheetHome.next); sheetPanel.hidden = true;
+    sheetPanel = null;
+  });
+  $('#sheetClose').onclick = () => sheet.close();
+  let sheetDown = false;
+  sheet.addEventListener('pointerdown', e => { sheetDown = e.target === sheet; });
+  sheet.addEventListener('click', e => { if (e.target === sheet && sheetDown) sheet.close(); sheetDown = false; });
   tabs.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.tab === 'bingo') openBingo(); else showTab(b.dataset.tab);
@@ -990,11 +1013,67 @@
   sysDark.addEventListener?.('change', paintTheme);
   paintTheme();
 
+  // ── phone / desktop placement ──────────────────────────
+  const clockEl = $('#clock'), mapwrap = $('.mapwrap'), stickyEl = $('.side .sticky');
+  function placeForLayout() {
+    if (isPhone()) { if (daysEl.parentNode !== $('#mdaysSlot')) $('#mdaysSlot').appendChild(daysEl); daysEl.hidden = false; }
+    else {
+      if (daysEl.parentNode !== stickyEl) stickyEl.appendChild(daysEl);
+      if (clockEl.parentNode !== mapwrap) mapwrap.insertBefore(clockEl, $('#times').nextSibling);
+      clockEl.classList.remove('big');
+      if (sheet.open) sheet.close();
+    }
+  }
+  matchMedia('(max-width: 820px)').addEventListener?.('change', () => { placeForLayout(); showTab('plan'); });
+  // phones: tap the small clock to grow it, tap anywhere else to shrink it back
+  clockEl.addEventListener('click', e => { if (!isPhone()) return; e.stopPropagation(); clockEl.classList.toggle('big'); });
+  document.addEventListener('pointerdown', e => { if (!clockEl.contains(e.target)) clockEl.classList.remove('big'); });
+
+  // ── the title: "Emma's bachelorette" becomes "Emma in Helsinki" ──
+  // The same beat as the CV's "Google Meet" → "Meet Nam": the new words fly in from the
+  // right at a constant speed, hit "'s bachelorette" and crush it against "Emma"
+  // (it narrows from its left edge and fades), and "Emma" takes the blow: its letters
+  // squeeze together, spring back past normal, and settle.
+  function playLockup() {
+    const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
+    const done = () => { lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return done();
+    const W = old.getBoundingClientRect().width;
+    const FROM = 120, V0 = .36, APPROACH = FROM / V0, CRUSH = 360, RECOIL = 460;
+    old.style.width = W + 'px';
+    nw.style.transform = `translateX(${FROM}px)`;
+    let t0 = 0;
+    const easeOut = x => 1 - Math.pow(1 - x, 3);
+    function frame(now) {
+      if (!t0) t0 = now;
+      const t = now - t0;
+      if (t < APPROACH) {                                   // approach: constant speed
+        nw.style.opacity = Math.min(1, t / 80);
+        nw.style.transform = `translateX(${FROM - V0 * t}px)`;
+      } else if (t < APPROACH + CRUSH) {                    // crush: "'s bachelorette" gives way
+        const k = 1 - easeOut((t - APPROACH) / CRUSH);
+        nw.style.opacity = 1; nw.style.transform = 'translateX(0)';
+        old.style.width = (W * k).toFixed(2) + 'px';
+        old.style.transform = `scaleX(${Math.max(k, .001).toFixed(4)})`;
+        old.style.opacity = Math.max(0, Math.min(1, (k - .15) / .5)).toFixed(3);
+        emma.style.letterSpacing = (-1.7 * Math.sqrt(1 - k)).toFixed(3) + 'px';
+      } else if (t < APPROACH + CRUSH + RECOIL) {           // recoil: Emma springs back past normal
+        const r = (t - APPROACH - CRUSH) / RECOIL;
+        old.style.width = '0px'; old.style.opacity = 0;
+        emma.style.letterSpacing = (-1.7 * Math.cos(r * Math.PI * 1.5) * Math.exp(-3.2 * r)).toFixed(3) + 'px';
+      } else return done();
+      requestAnimationFrame(frame);
+    }
+    setTimeout(() => requestAnimationFrame(frame), 1300); // let "Emma's bachelorette" be read first
+  }
+
   // ── boot ───────────────────────────────────────────────
   renderDays();
   renderBudget();
+  placeForLayout();
   setDay('sat');
+  playLockup();
   if (isAdmin()) unlock(true);
-  const t = store.get('emma_tab', 'plan');
+  const t = isPhone() ? 'plan' : store.get('emma_tab', 'plan');
   showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' || t === 'bingo' ? 'plan' : t);
 })();

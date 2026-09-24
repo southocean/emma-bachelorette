@@ -695,3 +695,68 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 @media (prefers-reduced-motion: reduce) {
   .bingoed .logo, .bingoed .logo::after, .bingoed .brand h1 em, .bingoed .tl-seg.tl-act::after { animation: none; }
 }
+
+/* ── the title lockup: "Emma's bachelorette" → "Emma in Helsinki" (see app.js) ── */
+.lockup { display: flex; align-items: baseline; white-space: nowrap; overflow: hidden; }
+.lockup em { color: var(--accent); font-style: italic; }
+.lk-old { display: inline-block; transform-origin: left center; overflow: hidden; vertical-align: baseline; }
+.lk-new { display: inline-block; opacity: 0; will-change: transform; }
+.lockup.done .lk-old { display: none; }
+.lockup.done .lk-new { opacity: 1; transform: none; }
+.bingoed .lockup em {
+  background: linear-gradient(90deg, #f6c453, #e2527c, #f08a5d, #f6c453); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: bingoShift 6s linear infinite;
+}
+
+/* ── phones: an app, not a page ── */
+.mdays-slot { display: none; }
+@media (max-width: 820px) {
+  html, body { height: 100%; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  .brand { flex: none; padding: 10px 14px; }
+  .brand .dates { display: none; }
+  .brand h1 { font-size: 23px; }
+  .logo { width: 44px; height: 44px; font-size: 22px; }
+  .mapwrap { flex: 1 1 auto; height: auto; min-height: 0; }
+  .side { flex: none; order: 2; padding: 0 12px calc(4px + env(safe-area-inset-bottom)); overflow: visible; border-top: 1px solid var(--line); }
+  .side .sticky { position: static; padding: 0; margin: 0; }
+  .side .panel, .side > .fine { display: none !important; }
+  .tabs { margin: 0; border: 0; justify-content: space-around; }
+  .tabs [data-tab="plan"] { display: none; }
+  .tabs button[aria-selected="true"] { color: var(--ink-2); border-color: transparent; }
+  .foot { margin: 0; padding: 0 0 4px; border: 0; text-align: center; font-size: 11px; }
+  .foot-more { display: none; }
+  .search { display: none; }
+
+  /* the day picker takes the search bar's place on the map */
+  .mdays-slot { display: block; position: absolute; z-index: 700; top: 8px; left: 8px; right: 8px; }
+  .mdays-slot .days { display: flex; gap: 6px; }
+  .mdays-slot .days button[data-day] {
+    flex: 1; height: 40px; padding: 0 8px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .mdays-slot .days button[data-day] span { display: none; }
+  .mdays-slot .days button[data-day] b { font-size: 14px; }
+  .mdays-slot .secret-toggle { flex: none; width: 44px; height: 40px; }
+
+  /* the day bar is always open on a phone: no thin state */
+  .times, .times:hover, .times.quiet:hover { height: 48px; }
+  .tl-track, .times:hover .tl-track, .times.quiet:hover .tl-track { height: 27px; }
+  .tl-seg.tl-act, .times.quiet .tl-seg.tl-act:not(.sel) { height: 18px; border-radius: 5px; }
+  .tl-seg.tl-act b, .times.quiet .tl-seg.tl-act:not(.sel) b { opacity: 1; }
+  .tl-seg.tl-go, .tl-seg.tl-walk, .times.quiet .tl-seg.tl-go:not(.sel), .times.quiet .tl-seg.tl-walk { height: 7px; }
+  .tl-seg.tl-go.can-open, .times.quiet .tl-seg.tl-go.can-open:not(.sel) { height: 11px; }
+  .tl-seg.tl-note, .times.quiet .tl-seg.tl-note { height: 5px; }
+
+  /* the clock lives in the detail panel, top right beside ✕: small, no time; a tap grows it */
+  .detail .clock {
+    position: absolute; top: 9px; right: 46px; left: auto; z-index: 5; padding: 0; border: 0; border-radius: 50%;
+    background: none !important; box-shadow: none !important; gap: 0; transform-origin: top right; cursor: pointer;
+    transition: transform .28s cubic-bezier(.2,.9,.3,1.2), opacity .2s ease;
+  }
+  .detail .clock .face { width: 30px; height: 30px; }
+  .detail .clock .digits { display: none; }
+  .detail .clock.in { transform: none; }
+  .detail .clock.in.big { transform: scale(2.8); }
+  .detail .clock.big .face { filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+  .detail h2 { padding-right: 76px; }
+}
