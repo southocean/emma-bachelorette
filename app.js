@@ -912,7 +912,9 @@
   const SIZE = 5, DARES_PER_CARD = 8;
   // admins can pretend it is already past the deadline, to check the locked screens
   const testLock = () => { try { return isAdmin() && sessionStorage.getItem('emma_testlock') === '1'; } catch { return false; } };
-  const locked = () => Date.now() >= CARD_DEADLINE || testLock();
+  // the deadline binds regular players only: an admin can still make a card after it
+  // (e.g. to let in someone who forgot); Test lock shows admins the locked screens anyway
+  const locked = () => (Date.now() >= CARD_DEADLINE && !isAdmin()) || testLock();
   const hashSeed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   function seeded(n) {
     let t = n >>> 0;
