@@ -389,29 +389,91 @@
     const acts = d.steps.filter(s => s.act && byId[s.act]);
     timesEl.style.setProperty('--dc', DAYC[day]);
     timesEl.innerHTML = acts.length
-      ? acts.map((s, i) => `<button data-place="${s.act}" title="${esc(s.name || byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
+      ? acts.map((s, i) => `<button data-place="${s.act}" style="--i:${i}" title="${esc(s.name || byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
       : `<span class="times-none">Arrival night: no activities</span>`;
     markActive(sel);
   }
 
-  // The open card's activity lights up in the time strip and in the plan list, and both
-  // scroll just enough to show it. The page itself is left alone on phones, where the
-  // list sits under the map and jumping to it would hide the card.
+  // The open card's activity lights up in the plan list (scrolled into view on wide
+  // screens), and the time strip on the map hands over to the clock, which spins to
+  // that activity's time. Closing the card brings the strip back.
   function markActive(id) {
-    timesEl.querySelectorAll('[data-place]').forEach(b => b.classList.toggle('sel', b.dataset.place === id));
     $('#dayView').querySelectorAll('li').forEach(li => {
       const hit = !!id && !!li.querySelector(`[data-place="${id}"]`);
       li.classList.toggle('sel', hit);
     });
+    const step = id && P[day].steps.find(s => s.act === id || (s.go && s.open && s.place === id));
+    const hhmm = step && /^\d{1,2}:\d{2}$/.test(step.t) ? step.t : null;
+    if (hhmm) clock.show(hhmm); else clock.hide();
     if (!id) return;
-    const chip = timesEl.querySelector('.sel');
-    if (chip) {
-      const l = chip.offsetLeft, r = l + chip.offsetWidth; // the strip is the chips' offsetParent
-      if (l < timesEl.scrollLeft || r > timesEl.scrollLeft + timesEl.clientWidth) timesEl.scrollTo({ left: l - 12, behavior: 'smooth' });
-    }
     const row = $('#dayView li.sel');
     if (row && !isPhone()) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
+
+  // ── the clock ──────────────────────────────────────────
+  // Starts at the real time, races to the activity's time, then keeps ticking at normal
+  // speed. Picking another activity races on to the new time. It never takes the long
+  // way round: more than 12 hours ahead means it rewinds instead.
+  const clock = (() => {
+    const el = $('#clock'), digits = $('#clockTime'), secs = $('#clockSec');
+    const hands = { h: $('#handH'), m: $('#handM'), s: $('#handS') };
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    let shown = false, raf = 0, hideTimer = 0;
+    let base = 0, baseAt = 0;  // minutes since midnight, and when that was true
+    let anim = null;           // { from, delta, start, dur }
+    const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + d.getMilliseconds() / 60000; };
+    const current = t => base + (t - baseAt) / 60000;
+    const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    function paint(min) {
+      const m = ((min % 1440) + 1440) % 1440;
+      const hh = Math.floor(m / 60), mm = Math.floor(m % 60), ss = Math.floor((m * 60) % 60);
+      digits.textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+      secs.textContent = ':' + String(ss).padStart(2, '0');
+      hands.h.style.transform = `rotate(${(m / 60) * 30}deg)`;
+      hands.m.style.transform = `rotate(${(m % 60) * 6}deg)`;
+      hands.s.style.transform = `rotate(${((m * 60) % 60) * 6}deg)`;
+    }
+    function frame(t) {
+      if (anim) {
+        const x = Math.min(1, (t - anim.start) / anim.dur);
+        paint(anim.from + anim.delta * ease(x));
+        if (x >= 1) { base = anim.from + anim.delta; baseAt = t; anim = null; }
+      } else paint(current(t));
+      raf = requestAnimationFrame(frame);
+    }
+    function goTo(hhmm) {
+      const [h, m] = hhmm.split(':').map(Number);
+      const t = performance.now(), from = anim ? anim.from + anim.delta * ease(Math.min(1, (t - anim.start) / anim.dur)) : current(t);
+      let delta = (((h * 60 + m) - from) % 1440 + 1440) % 1440;
+      if (delta > 720) delta -= 1440;
+      if (Math.abs(delta) < 1 / 60 || reduced.matches) { base = from + delta; baseAt = t; anim = null; return; }
+      anim = { from, delta, start: t, dur: Math.min(1600, 450 + Math.sqrt(Math.abs(delta)) * 38) };
+    }
+    return {
+      show(hhmm) {
+        clearTimeout(hideTimer);
+        if (!shown) {
+          shown = true;
+          base = nowMin(); baseAt = performance.now(); anim = null;
+          paint(base);
+          timesEl.classList.add('away');
+          el.hidden = false;
+          requestAnimationFrame(() => el.classList.add('in'));
+          cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+          setTimeout(() => { if (shown) goTo(hhmm); }, reduced.matches ? 0 : 220); // let it arrive before racing
+        } else goTo(hhmm);
+        el.style.setProperty('--dc', DAYC[day]);
+      },
+      hide() {
+        if (!shown) return;
+        shown = false; anim = null;
+        el.classList.remove('in');
+        timesEl.classList.remove('away');
+        hideTimer = setTimeout(() => { el.hidden = true; cancelAnimationFrame(raf); }, 260);
+      },
+    };
+  })();
+
   $('#dayView').addEventListener('click', e => {
     const b = e.target.closest('button[data-place]'); if (b) focusPlace(b.dataset.place);
   });
@@ -646,9 +708,11 @@
           <p class="how"><b>In Helsinki:</b> ${esc(t.helsinki)}</p>
         </div>`).join('')}
       <button class="ghost" id="lock">Lock again</button>`;
+    renderDares(data.dares);
     $('#lock').onclick = () => {
       try { sessionStorage.removeItem('emma_admin'); } catch {}
       $('#secretTab').hidden = true; $('#secret').innerHTML = '';
+      $('#daresTab').hidden = true; $('#dares').innerHTML = '';
       setSecret(false); showTab('plan');
     };
     $('#secretTab').hidden = false;
@@ -662,6 +726,54 @@
     try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
     setSecret(wasOn);
     if (!quiet) { showTab('secret'); confetti(); }
+  }
+
+  // Nam's review of the proposed bingo dares. Decisions live in this browser only;
+  // "Copy my decisions" puts them on the clipboard to send back.
+  function renderDares(d) {
+    if (!d || !d.items) return;
+    const saved = store.get('emma_dares', {});
+    const state = id => saved[id] || { v: '', edit: '' };
+    function paint() {
+      const n = { keep: 0, drop: 0, open: 0 };
+      d.items.forEach(x => { const v = state(x.id).v; n[v === 'keep' ? 'keep' : v === 'drop' ? 'drop' : 'open']++; });
+      $('#dares').innerHTML = `
+        <p class="lede">${esc(d.intro)}</p>
+        <p class="dare-count"><b>${n.keep}</b> kept · <b>${n.drop}</b> dropped · <b>${n.open}</b> to decide</p>
+        ${d.items.map((x, i) => { const s = state(x.id); return `
+          <div class="dare ${s.v}" data-id="${x.id}">
+            <div class="dare-top"><span class="dare-n">${i + 1}</span><p>${esc(x.text)}</p></div>
+            <div class="meta">${esc(x.when)} · proof: ${esc(x.proof)}</div>
+            <div class="dare-row">
+              <button data-v="keep" aria-pressed="${s.v === 'keep'}">✓ Keep</button>
+              <button data-v="drop" aria-pressed="${s.v === 'drop'}">✕ Drop</button>
+              <input data-edit placeholder="Reword it (optional)" value="${esc(s.edit)}">
+            </div>
+          </div>`; }).join('')}
+        <div class="dare-foot"><button class="ghost" id="daresCopy">Copy my decisions</button><span id="daresCopied" class="fine"></span></div>`;
+    }
+    paint();
+    $('#dares').onclick = e => {
+      const b = e.target.closest('[data-v]');
+      if (b) {
+        const id = b.closest('.dare').dataset.id, s = state(id);
+        saved[id] = { ...s, v: s.v === b.dataset.v ? '' : b.dataset.v };
+        store.set('emma_dares', saved); paint(); return;
+      }
+      if (e.target.id === 'daresCopy') {
+        const line = (x, i) => { const s = state(x.id); return `${i + 1}. [${s.v ? s.v.toUpperCase() : '??'}] ${x.text}${s.edit ? ` → "${s.edit}"` : ''}`; };
+        const text = 'Bingo dares, my decisions:\n' + d.items.map(line).join('\n');
+        const done = ok => { $('#daresCopied').textContent = ok ? ' Copied. Paste it to Claude.' : ' Copy failed: select the list and copy by hand.'; };
+        (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+      }
+    };
+    $('#dares').oninput = e => {
+      if (!e.target.matches('[data-edit]')) return;
+      const id = e.target.closest('.dare').dataset.id;
+      saved[id] = { ...state(id), edit: e.target.value.trim() };
+      store.set('emma_dares', saved);
+    };
+    $('#daresTab').hidden = false;
   }
 
   // ── light / dark ───────────────────────────────────────
@@ -689,5 +801,5 @@
   setDay('sat');
   if (isAdmin()) unlock(true);
   const t = store.get('emma_tab', 'plan');
-  showTab(t === 'secret' && !isAdmin() ? 'plan' : t);
+  showTab((t === 'secret' || t === 'dares') && !isAdmin() ? 'plan' : t);
 })();

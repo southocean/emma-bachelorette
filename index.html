@@ -33,6 +33,7 @@
       <button role="tab" data-tab="bingo">Bingo</button>
       <button role="tab" data-tab="budget">Budget</button>
       <button role="tab" data-tab="secret" id="secretTab" hidden>🔓 Traditions</button>
+      <button role="tab" data-tab="dares" id="daresTab" hidden>🔓 Dares</button>
     </nav>
     <div class="days" id="days"></div>
     </div>
@@ -61,6 +62,10 @@
     <section class="panel" id="panel-secret" hidden>
       <div id="secret"></div>
     </section>
+
+    <section class="panel" id="panel-dares" hidden>
+      <div id="dares"></div>
+    </section>
     <footer class="foot">
       <p>Made by Nam with love. · © 2026 · For Emma's Helsinki weekend, 2–4 October 2026 · Updated 24 Sep 2026 · Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · <a href="https://github.com/southocean/emma-bachelorette" target="_blank" rel="noopener">Source</a></p>
     </footer>
@@ -70,6 +75,17 @@
     <div id="map" aria-label="Map of Helsinki"></div>
     <div class="filters" id="filters"></div>
     <div class="times" id="times" aria-label="Today's activities by time"></div>
+    <div class="clock" id="clock" hidden aria-hidden="true">
+      <svg viewBox="0 0 40 40" class="face">
+        <circle cx="20" cy="20" r="18" class="rim"/>
+        <g class="ticks"><path d="M20 4v3M36 20h-3M20 36v-3M4 20h3"/></g>
+        <line id="handH" x1="20" y1="20" x2="20" y2="11" class="hand h"/>
+        <line id="handM" x1="20" y1="20" x2="20" y2="6.5" class="hand m"/>
+        <line id="handS" x1="20" y1="23" x2="20" y2="5" class="hand s"/>
+        <circle cx="20" cy="20" r="1.8" class="pin"/>
+      </svg>
+      <span class="digits"><b id="clockTime">00:00</b><small id="clockSec">:00</small></span>
+    </div>
     <div class="search">
       <input id="q" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="results"
         placeholder="Search places & activities" aria-label="Search places and activities" autocomplete="off" spellcheck="false">
