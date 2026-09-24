@@ -1,3 +1,7 @@
+/* anything with the hidden attribute is gone, whatever its display rule says
+   (this bit twice: the clock and the day-bar bubble both stayed on screen) */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #fbf6ef;
   --surface: #ffffff;
@@ -9,7 +13,7 @@
   --gold: #b88a2e;
   --fri: #8a8f98;
   --sat: #c2417a;
-  --sun: #2b7fb3;
+  --secret: #2b7fb3;
   --shadow: 0 10px 30px rgba(31, 36, 51, .14);
   --radius: 14px;
   color-scheme: light;
@@ -17,13 +21,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #14161d; --surface: #1c1f28; --surface-2: #252935; --ink: #f1ece4; --ink-2: #a8adbb;
-    --line: #333845; --accent: #e57a93; --gold: #d9b35f; --fri: #9aa0aa; --sat: #ec6fa2; --sun: #5fb0e0;
+    --line: #333845; --accent: #e57a93; --gold: #d9b35f; --fri: #9aa0aa; --sat: #ec6fa2; --secret: #5fb0e0;
     --shadow: 0 10px 30px rgba(0, 0, 0, .45); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #14161d; --surface: #1c1f28; --surface-2: #252935; --ink: #f1ece4; --ink-2: #a8adbb;
-  --line: #333845; --accent: #e57a93; --gold: #d9b35f; --fri: #9aa0aa; --sat: #ec6fa2; --sun: #5fb0e0;
+  --line: #333845; --accent: #e57a93; --gold: #d9b35f; --fri: #9aa0aa; --sat: #ec6fa2; --secret: #5fb0e0;
   --shadow: 0 10px 30px rgba(0, 0, 0, .45); color-scheme: dark;
 }
 
@@ -508,4 +512,38 @@ dialog#gate::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur
   .go-open:hover, .go-open:focus-visible { background: var(--surface-2); border-color: var(--dc); border-style: dashed; }
   .go-open:hover .go-more, .go-open:focus-visible .go-more { opacity: 1; transform: none; }
   .go.sel .go-open { background: color-mix(in srgb, var(--dc) 12%, var(--surface)); border-color: var(--dc); border-style: solid; }
+}
+
+/* ── day colours: Saturday and Sunday share the pink; blue is the secret plan's ── */
+:root { --d-fri: var(--fri); --d-sat: var(--sat); --d-sun: var(--sat); }
+:root.secret-plan { --d-fri: var(--secret); --d-sat: var(--secret); --d-sun: var(--secret); }
+
+/* ── map layout: day bar + search share the top row; category chips at the bottom ── */
+.times { top: 12px; height: 40px; box-sizing: border-box; padding: 4px 10px 0; }
+.clock { top: 12px; }
+.filters { top: auto; bottom: 12px; left: 12px; right: calc(var(--panel-w) + 24px); padding-bottom: 0; }
+.tl-scale { height: 13px; }
+.tl-tick { bottom: -3px; }
+.tl-tick.minor { top: 8px; }
+.tl-track { height: 19px; }
+
+/* thin blocks at rest; a block grows to show its number on hover (or while its bubble is up) */
+.tl-seg { top: 50%; bottom: auto; height: 6px; transform: translateY(-50%); transition: height .16s ease, opacity .2s ease, filter .15s, box-shadow .15s; }
+.tl-seg.tl-act { height: 8px; border-radius: 4px; }
+.tl-seg.tl-act b { opacity: 0; transition: opacity .12s; }
+.tl-seg.tl-go, .tl-seg.tl-walk { top: 50%; bottom: auto; height: 4px; }
+.tl-seg.tl-go.can-open { top: 50%; bottom: auto; height: 5px; }
+.tl-seg.tl-note { top: 50%; bottom: auto; height: 3px; }
+.tl-seg.tl-act:hover, .tl-seg.tl-act.hot { height: 18px; border-radius: 5px; }
+.tl-seg.tl-act:hover b, .tl-seg.tl-act.hot b { opacity: 1; }
+.tl-seg.tl-go.can-open:hover, .tl-seg.tl-go.hot { height: 11px; }
+.tl-seg.tl-act.hot { transform: translateY(-50%); }
+.tl-seg.hot { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--dc); }
+.times.away .tl-seg { transform: translateY(-50%) translateY(-4px); }
+.tl-tip { top: calc(100% + 8px); }
+
+@media (max-width: 820px) {
+  .times { top: 56px; left: 8px; right: 8px; }
+  .clock { top: 56px; left: 8px; }
+  .filters { top: auto; bottom: 8px; left: 8px; right: 8px; }
 }

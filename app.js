@@ -2,7 +2,8 @@
   'use strict';
   const $ = (s, el = document) => el.querySelector(s);
   const byId = Object.fromEntries(PLACES.map(p => [p.id, p]));
-  const DAYC = { fri: 'var(--fri)', sat: 'var(--sat)', sun: 'var(--sun)' };
+  // day colours go through --d-*, so secret mode can repaint every day blue in one place
+  const DAYC = { fri: 'var(--d-fri)', sat: 'var(--d-sat)', sun: 'var(--d-sun)' };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -76,7 +77,7 @@
     const m = L.marker([p.lat, p.lng], { icon: iconFor(p, 'sat'), riseOnHover: true })
       // pins near the top would put the tooltip under the filter chips, so open those downwards
       .on('mouseover', () => {
-        const low = map.latLngToContainerPoint(m.getLatLng()).y < 190;
+        const low = map.latLngToContainerPoint(m.getLatLng()).y < (isPhone() ? 170 : 120);
         Object.assign(m.getTooltip().options, low ? { direction: 'bottom', offset: [0, 12] } : { direction: 'top', offset: [0, -12] });
       })
       .bindTooltip(`<b>${esc(p.name)}</b>${p.venue ? `<span class="v">${esc(p.venue)}</span>` : ''}${esc(p.hook)}<br><span class="c">${esc(p.cost)}</span>`,
@@ -123,11 +124,11 @@
       if (!last || last.id !== p.id) pts.push(p);
     });
     route = pts.length > 1 ? L.polyline(pts.map(p => [p.lat, p.lng]), {
-      color: getComputedStyle(document.documentElement).getPropertyValue(`--${day}`).trim() || '#c2417a',
+      color: getComputedStyle(document.documentElement).getPropertyValue(`--d-${day}`).trim() || '#c2417a',
       weight: 3, opacity: .75, dashArray: '2 8', lineCap: 'round',
     }).addTo(map) : null;
-    const top = isPhone() ? 140 : 100; // clear the search box, chips and time strip
-    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lng])), { paddingTopLeft: [30, top], paddingBottomRight: [30, 30], maxZoom: 15 });
+    const top = isPhone() ? 110 : 72; // clear the search box and the day bar; the chips sit at the bottom
+    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lng])), { paddingTopLeft: [30, top], paddingBottomRight: [30, 60], maxZoom: 15 });
     else map.setView([60.1699, 24.9384], 13);
   }
 
@@ -248,7 +249,7 @@
       const b = L.latLngBounds(ends.map(x => [x.lat, x.lng]));
       const card = dEl.getBoundingClientRect(), mapBox = map.getContainer().getBoundingClientRect();
       const freeW = isPhone() ? mapBox.width - 60 : card.left - mapBox.left - 60;
-      const freeH = isPhone() ? card.top - mapBox.top - 150 : mapBox.height - 150;
+      const freeH = isPhone() ? card.top - mapBox.top - 120 : mapBox.height - 140;
       const fitZ = map.getBoundsZoom(b, false, L.point(Math.max(0, mapBox.width - freeW), Math.max(0, mapBox.height - freeH)));
       const mid = b.getCenter();
       return reveal({ lat: mid.lat, lng: mid.lng }, true, Math.max(11, Math.min(15, fitZ)));
@@ -259,8 +260,8 @@
     // the free area of the map: to the left of the card on wide screens, above it on phones
     const wide = !isPhone();
     const free = wide
-      ? { x: (card.left - mapBox.left) / 2, y: (size.y + 90) / 2 }
-      : { x: size.x / 2, y: (card.top - mapBox.top + 140) / 2 }; // below the search box, chips and times
+      ? { x: (card.left - mapBox.left) / 2, y: (size.y + 64 - 56) / 2 } // between the top row and the chips
+      : { x: size.x / 2, y: (card.top - mapBox.top + 100) / 2 }; // below the search box and the day bar
     const pt = map.project([p.lat, p.lng], z);
     const inView = map.latLngToContainerPoint([p.lat, p.lng]);
     const covered = wide ? inView.x > card.left - mapBox.left - 20 : inView.y > card.top - mapBox.top - 20;
@@ -406,6 +407,7 @@
       `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)} · ≈ €${Math.round(dayCost(k))}</span></button>`).join('')
       + (isAdmin() ? `<button class="secret-toggle" id="secretToggle" aria-pressed="${secretOn}" title="${secretOn ? 'Showing the secret plan: click for the public one' : 'Show the secret plan'}" aria-label="Secret plan">🤫</button>` : '');
     daysEl.classList.toggle('secret', secretOn);
+    document.documentElement.classList.toggle('secret-plan', secretOn);
   }
   daysEl.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -494,7 +496,7 @@
   // every day shares one hour scale, so a shorter day (Sunday) visibly ends earlier
   function barRange() {
     const all = Object.values(P).map(daySegments).filter(x => x.length);
-    return [Math.floor(Math.min(...all.map(x => x[0].start)) / 60) * 60, Math.ceil(Math.max(...all.map(x => x[x.length - 1].end)) / 60) * 60];
+    return [Math.min(...all.map(x => x[0].start)), Math.ceil(Math.max(...all.map(x => x[x.length - 1].end)) / 60) * 60];
   }
   const TINY = 10; // minutes: shorter bits are drawn but not clickable
   function renderDayBar(d) {
@@ -505,7 +507,10 @@
     const pct = m => ((m - lo) / (hi - lo) * 100).toFixed(3) + '%';
     const hours = (hi - lo) / 60, step = hours > 10 ? 2 : 1;
     const ticks = [];
-    for (let m = lo; m <= hi; m += 60) ticks.push(`<span class="tl-tick ${(m - lo) / 60 % step ? 'minor' : ''}" style="left:${pct(m)}"><i>${(m - lo) / 60 % step ? '' : fmtT(m).slice(0, 2)}</i></span>`);
+    for (let m = Math.ceil(lo / 60) * 60; m <= hi; m += 60) {
+      const minor = (m / 60) % step !== 0;
+      ticks.push(`<span class="tl-tick ${minor ? 'minor' : ''}" style="left:${pct(m)}"><i>${minor ? '' : fmtT(m).slice(0, 2)}</i></span>`);
+    }
     timesEl.innerHTML = `
       <div class="tl-scale">${ticks.join('')}</div>
       <div class="tl-track">${barSegs.map((sg, i) => {
@@ -546,18 +551,18 @@
   // leaving a block (or the bar) lets the tip linger a moment, then it goes
   timesEl.addEventListener('pointerout', e => {
     if (e.pointerType === 'touch') return;
-    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('button.tl-seg')) hideSoon(900);
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('button.tl-seg')) hideSoon(2900);
   });
-  timesEl.addEventListener('mouseleave', () => hideSoon(700));
+  timesEl.addEventListener('mouseleave', () => hideSoon(2700));
   let lastPointer = 'mouse';
   timesEl.addEventListener('pointerdown', e => { lastPointer = e.pointerType; });
   timesEl.addEventListener('click', e => {
     const b = e.target.closest('button.tl-seg'); if (!b) return;
     const i = +b.dataset.seg, sg = barSegs[i];
     // on a phone the first tap explains (and fades after a few seconds), the second opens
-    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); hideSoon(3500); return; }
+    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); hideSoon(5500); return; }
     if (sg.place) { hideTip(); select(sg.place); }
-    else { showTip(i); hideSoon(2500); }
+    else { showTip(i); hideSoon(4500); }
   });
 
   // The open card's activity lights up in the plan list (scrolled into view on wide
@@ -912,7 +917,7 @@
     document.documentElement.dataset.theme = next;
     store.set('emma_theme', next);
     paintTheme();
-    route?.setStyle({ color: getComputedStyle(document.documentElement).getPropertyValue(`--${day}`).trim() });
+    route?.setStyle({ color: getComputedStyle(document.documentElement).getPropertyValue(`--d-${day}`).trim() });
   };
   sysDark.addEventListener?.('change', paintTheme);
   paintTheme();
