@@ -687,7 +687,9 @@
   // after that the number is locked, and without a card you are out of the game.
   const CARD_DEADLINE = Date.UTC(2026, 9, 3, 6, 0); // 09:00 EEST
   const SIZE = 5, DARES_PER_CARD = 8;
-  const locked = () => Date.now() >= CARD_DEADLINE;
+  // admins can pretend it is already past the deadline, to check the locked screens
+  const testLock = () => { try { return isAdmin() && sessionStorage.getItem('emma_testlock') === '1'; } catch { return false; } };
+  const locked = () => Date.now() >= CARD_DEADLINE || testLock();
   const hashSeed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   function seeded(n) {
     let t = n >>> 0;
@@ -716,6 +718,10 @@
     $('#bingoForm').hidden = isLocked; $('#bingoOut').hidden = !isLocked;
     $('#bingoDeadline').innerHTML = isLocked ? '' : fmtDeadline();
     $('#bingoChange').hidden = isLocked; $('#bingoLock').hidden = !isLocked;
+    const tl = $('#bingoTestLock');
+    tl.hidden = !isAdmin();
+    tl.setAttribute('aria-pressed', testLock());
+    tl.textContent = testLock() ? '🔒 Test lock: on' : '🔓 Test lock';
     if (!playing) return 0;
     const cells = cardFor(bingo.seed), hit = new Set(bingo.hits);
     const won = lines.filter(l => l.every(i => hit.has(i))), winCells = new Set(won.flat());
@@ -729,6 +735,10 @@
   const modal = $('#bingoModal');
   function openBingo() { wins = renderBingo(null); modal.showModal(); }
   $('#bingoClose').onclick = () => modal.close();
+  $('#bingoTestLock').onclick = () => {
+    try { sessionStorage.setItem('emma_testlock', testLock() ? '0' : '1'); } catch {}
+    wins = renderBingo(null);
+  };
   // a drag that starts inside the card and is released over the backdrop must not close it
   let downOnBackdrop = false;
   modal.addEventListener('pointerdown', e => { downOnBackdrop = e.target === modal; });

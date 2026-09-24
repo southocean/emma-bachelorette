@@ -613,3 +613,6 @@ dialog.modal::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blu
 .times.quiet:hover ~ .clock { top: 60px; }
 @media (max-width: 820px) { .times.quiet:hover ~ .clock { top: 104px; } }
 @media (max-width: 820px) { .clock .face { width: 52px; height: 52px; } .clock { padding: 6px 8px 5px; } }
+.modal-tools { display: flex; gap: 8px; align-items: center; }
+#bingoTestLock { font-size: 12.5px; padding: 5px 11px; }
+#bingoTestLock[aria-pressed="true"] { border-color: var(--secret); color: var(--secret); }
