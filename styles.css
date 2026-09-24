@@ -766,3 +766,6 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   background: linear-gradient(90deg, #f6c453, #e2527c, #f08a5d, #f6c453); background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent; animation: bingoShift 6s linear infinite;
 }
+/* "in Helsinki" is the plain part: ink, upright; Emma carries the pink italic */
+.lockup .lk-new em { color: var(--ink); font-style: normal; }
+.bingoed .lockup .lk-new em { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); animation: none; }
