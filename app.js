@@ -176,7 +176,13 @@
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
     dEl.style.setProperty('--dc', DAYC[day]);
-    if (isPhone()) { clockEl.classList.remove('big'); dEl.appendChild(clockEl); } // re-rendering the card removed it
+    if (isPhone()) {
+      clockEl.classList.remove('big'); dEl.appendChild(clockEl); // re-rendering the card removed it
+      dEl.insertAdjacentHTML('afterbegin', sheetChrome(id));
+      const wasOpen = !dEl.hidden;
+      dEl.hidden = false;
+      if (!wasOpen || !sheetState) setSheet('mid', !wasOpen);
+    }
     dEl.hidden = false;
     dEl.scrollTop = 0;
     reveal(p, fly);
@@ -249,8 +255,9 @@
       if (!ends.length) return;
       const b = L.latLngBounds(ends.map(x => [x.lat, x.lng]));
       const card = dEl.getBoundingClientRect(), mapBox = map.getContainer().getBoundingClientRect();
+      const cardTop = isPhone() ? sheetTop() : card.top;
       const freeW = isPhone() ? mapBox.width - 60 : card.left - mapBox.left - 60;
-      const freeH = isPhone() ? card.top - mapBox.top - 120 : mapBox.height - 140;
+      const freeH = isPhone() ? cardTop - mapBox.top - 120 : mapBox.height - 140;
       const fitZ = map.getBoundsZoom(b, false, L.point(Math.max(0, mapBox.width - freeW), Math.max(0, mapBox.height - freeH)));
       const mid = b.getCenter();
       return reveal({ lat: mid.lat, lng: mid.lng }, true, Math.max(11, Math.min(15, fitZ)));
@@ -258,24 +265,121 @@
     const z = zoom != null ? zoom : fly ? Math.max(map.getZoom(), 15) : map.getZoom();
     const size = map.getSize();
     const card = dEl.getBoundingClientRect(), mapBox = map.getContainer().getBoundingClientRect();
+    const cardTop = isPhone() ? sheetTop() : card.top;
     // the free area of the map: to the left of the card on wide screens, above it on phones
     const wide = !isPhone();
     const free = wide
       ? { x: (card.left - mapBox.left) / 2, y: (size.y + 64 - 56) / 2 } // between the top row and the chips
-      : { x: size.x / 2, y: (card.top - mapBox.top + 100) / 2 }; // below the search box and the day bar
+      : { x: size.x / 2, y: (cardTop - mapBox.top + 100) / 2 }; // below the day picker and the day bar
     const pt = map.project([p.lat, p.lng], z);
     const inView = map.latLngToContainerPoint([p.lat, p.lng]);
-    const covered = wide ? inView.x > card.left - mapBox.left - 20 : inView.y > card.top - mapBox.top - 20;
+    const covered = wide ? inView.x > card.left - mapBox.left - 20 : inView.y > cardTop - mapBox.top - 20;
     if (!fly && !covered && inView.x > 0 && inView.y > 50) return;
     const centre = map.unproject(pt.subtract([free.x - size.x / 2, free.y - size.y / 2]), z);
     map.flyTo(centre, z, { duration: .6 });
   }
   function closeDetail() {
     dEl.hidden = true;
+    sheetState = null; dEl.classList.remove('full', 'mid');
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = null;
     markActive(null);
   }
+  // ── phones: the detail card is a bottom sheet ──
+  // Opens halfway (the map still shows above it); drag it up to just below the day bar,
+  // down to halfway again, down once more (or tap the map) to close. Swipe sideways for
+  // the next or previous activity of the day. The first time, a hint says so.
+  let sheetState = null;
+  const fullTop = () => { const t = $('#times').getBoundingClientRect(); return Math.round(t.bottom + 8); };
+  const midTop = () => Math.round(innerHeight * .42);
+  const sheetTop = () => sheetState === 'full' ? fullTop() : midTop();
+  function setSheet(state, fromBelow) {
+    sheetState = state;
+    const H = innerHeight - fullTop();
+    dEl.style.setProperty('--sheet-h', H + 'px');
+    const y = state === 'full' ? 0 : state === 'mid' ? midTop() - fullTop() : H;
+    if (fromBelow) { dEl.classList.add('dragging'); dEl.style.setProperty('--sheet-y', H + 'px'); void dEl.offsetHeight; dEl.classList.remove('dragging'); }
+    dEl.style.setProperty('--sheet-y', y + 'px');
+    dEl.classList.toggle('full', state === 'full'); dEl.classList.toggle('mid', state === 'mid');
+    if (state !== 'full') dEl.scrollTop = 0;
+  }
+  // the activities of the day, in order: what a sideways swipe moves between
+  function daySequence() { return P[day].steps.filter(s => s.act && byId[s.act]).map(s => s.act); }
+  function neighbour(id, dir) {
+    const seq = daySequence(), i = seq.indexOf(id);
+    if (i >= 0) return seq[i + dir] || null;
+    // a transfer: the activity just before or after it in the day
+    const steps = P[day].steps, gi = steps.findIndex(s => s.go && s.place === id);
+    if (gi < 0) return null;
+    const pool = dir > 0 ? steps.slice(gi + 1) : steps.slice(0, gi).reverse();
+    const hit = pool.find(s => s.act && byId[s.act]);
+    return hit ? hit.act : null;
+  }
+  const swipeHinted = () => store.get('emma_swipehint', false);
+  function sheetChrome(id) {
+    const seq = daySequence(), i = seq.indexOf(id);
+    const pos = i >= 0 ? `<span class="sh-pos">${neighbour(id, -1) ? '‹' : '<i></i>'}<b>${i + 1} / ${seq.length}</b>${neighbour(id, 1) ? '›' : '<i></i>'}</span>` : '';
+    const hint = !swipeHinted() && neighbour(id, 1) ? '<span class="sh-hint">Swipe left for the next activity</span>' : '';
+    return `<div class="sh-chrome" aria-hidden="true"><span class="sh-grab"></span>${pos}${hint}</div>`;
+  }
+  function swipeTo(dir) {
+    const next = neighbour(sel, dir);
+    if (!next) { setSheetX(0); return; }
+    store.set('emma_swipehint', true);
+    const out = dir > 0 ? -innerWidth : innerWidth;
+    dEl.classList.remove('dragging'); setSheetX(out);
+    setTimeout(() => {
+      dEl.classList.add('dragging'); setSheetX(-out); void dEl.offsetHeight;
+      select(next);
+      dEl.classList.remove('dragging'); setSheetX(0);
+    }, 170);
+  }
+  const setSheetX = x => dEl.style.setProperty('--sheet-x', x + 'px');
+  let drag = null;
+  dEl.addEventListener('touchstart', e => {
+    if (!isPhone() || dEl.hidden || e.touches.length > 1) return;
+    const t = e.touches[0];
+    drag = { x0: t.clientX, y0: t.clientY, t0: performance.now(), axis: null,
+      y: parseFloat(dEl.style.getPropertyValue('--sheet-y')) || 0, scrolled: dEl.scrollTop > 0 };
+  }, { passive: true });
+  dEl.addEventListener('touchmove', e => {
+    if (!drag) return;
+    const t = e.touches[0], dx = t.clientX - drag.x0, dy = t.clientY - drag.y0;
+    if (!drag.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (drag.axis === 'x') { e.preventDefault(); dEl.classList.add('dragging'); setSheetX(dx); return; }
+    // vertical: in the full sheet, content scrolls; the sheet only moves down from the very top
+    if (sheetState === 'full' && (drag.scrolled || dy < 0 || dEl.scrollTop > 0)) { drag.axis = 'scroll'; return; }
+    e.preventDefault();
+    dEl.classList.add('dragging');
+    const H = innerHeight - fullTop();
+    dEl.style.setProperty('--sheet-y', Math.max(0, Math.min(H, drag.y + dy)) + 'px');
+  }, { passive: false });
+  dEl.addEventListener('touchend', e => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    const t = e.changedTouches[0], dx = t.clientX - d.x0, dy = t.clientY - d.y0, v = dy / Math.max(1, performance.now() - d.t0);
+    dEl.classList.remove('dragging');
+    if (d.axis === 'x') {
+      const vx = dx / Math.max(1, performance.now() - d.t0);
+      if (dx < -70 || vx < -.5) swipeTo(1); else if (dx > 70 || vx > .5) swipeTo(-1); else setSheetX(0);
+      return;
+    }
+    if (d.axis !== 'y') return;
+    const midY = midTop() - fullTop(), y = d.y + dy;
+    if (sheetState === 'full') {
+      if (y > midY + 200) { setSheet('closed'); setTimeout(dismissCard, 200); } // a long pull closes it outright
+      else if (y > 60 || v > .4) setSheet('mid');
+      else setSheet('full');
+    } else {
+      if (dy < -40 || v < -.35) setSheet('full');
+      else if (dy > 60 || v > .45) { setSheet('closed'); setTimeout(dismissCard, 200); }
+      else setSheet('mid');
+    }
+  }, { passive: true });
+
   // ✕ (or Escape) on a card that came from the search brings the result list back
   function dismissCard() {
     closeDetail();
@@ -573,7 +677,7 @@
     const b = e.target.closest('button.tl-seg'); if (!b) return;
     const i = +b.dataset.seg, sg = barSegs[i];
     // on a phone the first tap explains (and fades after a few seconds), the second opens
-    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); hideSoon(5500); return; }
+    if (isPhone()) { if (sg.place) { hideTip(); select(sg.place); } return; } // no hover on phones: a tap opens
     if (sg.place) { hideTip(); timesEl.classList.add('quiet'); select(sg.place); } // settle into the selected look at once
     else { showTip(i); hideSoon(4500); }
   });
@@ -1064,7 +1168,7 @@
       } else return done();
       requestAnimationFrame(frame);
     }
-    setTimeout(() => requestAnimationFrame(frame), 3000); // let "Emma's bachelorette" be read first
+    setTimeout(() => requestAnimationFrame(frame), 2000); // let "Emma's bachelorette" be read first
   }
 
   // ── boot ───────────────────────────────────────────────

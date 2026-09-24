@@ -770,3 +770,33 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 .lockup .lk-new em { color: var(--ink); font-style: normal; }
 .bingoed .lockup .lk-new em { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); animation: none; }
 .lockup .lk-new { margin-left: .08em; } /* the italic a leans into the space before 'in' */
+
+/* ── phones: the detail card is a bottom sheet over the tab bar ── */
+.sh-chrome { display: none; }
+@media (max-width: 820px) {
+  .foot { display: none; }
+  .detail {
+    position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; z-index: 900;
+    height: var(--sheet-h, 60vh); max-height: none; border-radius: 20px 20px 0 0; border-bottom: 0;
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom));
+    transform: translate(var(--sheet-x, 0px), var(--sheet-y, 0px));
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+    overflow-y: hidden; overscroll-behavior: contain; touch-action: none;
+    box-shadow: 0 -8px 30px rgba(0,0,0,.22);
+  }
+  .detail.full { overflow-y: auto; touch-action: pan-y; }
+  .detail.dragging { transition: none; }
+  .sh-chrome { display: flex; flex-direction: column; align-items: center; gap: 4px; position: sticky; top: 0; z-index: 4; background: var(--surface); margin: 0 -16px 4px; padding: 8px 0 6px; }
+  .sh-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
+  .sh-pos { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .sh-pos b { font-weight: 700; }
+  .sh-pos i { display: inline-block; width: 6px; }
+  .sh-hint { font-size: 12px; font-weight: 700; color: var(--dc); animation: shHint 1.6s ease-in-out 3; }
+  @keyframes shHint { 0%, 100% { transform: translateX(0); } 40% { transform: translateX(-10px); } 60% { transform: translateX(-10px); } }
+  .detail .x { top: 34px; right: 12px; }
+  .detail .clock { top: 36px; right: 52px; }
+}
+@media (max-width: 820px) {
+  .detail { z-index: 1100; } /* above Leaflet's controls (1000), e.g. the attribution */
+  .detail .x { z-index: 6; }
+}
