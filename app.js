@@ -1181,7 +1181,10 @@
   function unplayLockup() {
     const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
     const run = ++lockupRun;
-    const end = () => { if (run !== lockupRun) return; lockupBusy = false; [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    const end = () => {
+      if (run !== lockupRun) return; lockupBusy = false; [emma, old, nw].forEach(x => x.removeAttribute('style'));
+      playLockup(3000, true); // ...and after 3 s "in Helsinki" fights its way back in
+    };
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { lk.classList.remove('done'); return end(); }
     lockupBusy = true;
     // measure "'s bachelorette" at full size, then start it folded shut behind "Emma"
@@ -1215,15 +1218,15 @@
     }
     requestAnimationFrame(frame);
   }
-  function playLockup(hold = 2000) {
+  function playLockup(hold = 2000, comeback = false) {
     const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
     const run = ++lockupRun; // a replay cancels whatever run is still going
     lk.classList.remove('done'); [emma, old, nw].forEach(x => x.removeAttribute('style'));
     const done = () => { if (run !== lockupRun) return; lockupBusy = false; lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
-    lockupBusy = true;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return done();
     const W = old.getBoundingClientRect().width;
-    const FROM = 120, V0 = .36, APPROACH = FROM / V0, CRUSH = 360, RECOIL = 460;
+    // the comeback comes in faster and hits harder: it is fighting for its place
+    const FROM = comeback ? 170 : 120, V0 = comeback ? .62 : .36, APPROACH = FROM / V0, CRUSH = comeback ? 280 : 360, RECOIL = comeback ? 560 : 460, HIT = comeback ? 2.6 : 1.7;
     old.style.width = W + 'px';
     nw.style.transform = `translateX(${FROM}px)`;
     let t0 = 0;
@@ -1241,15 +1244,15 @@
         old.style.width = (W * k).toFixed(2) + 'px';
         old.style.transform = `scaleX(${Math.max(k, .001).toFixed(4)})`;
         old.style.opacity = Math.max(0, Math.min(1, (k - .15) / .5)).toFixed(3);
-        emma.style.letterSpacing = (-1.7 * Math.sqrt(1 - k)).toFixed(3) + 'px';
+        emma.style.letterSpacing = (-HIT * Math.sqrt(1 - k)).toFixed(3) + 'px';
       } else if (t < APPROACH + CRUSH + RECOIL) {           // recoil: Emma springs back past normal
         const r = (t - APPROACH - CRUSH) / RECOIL;
         old.style.width = '0px'; old.style.opacity = 0;
-        emma.style.letterSpacing = (-1.7 * Math.cos(r * Math.PI * 1.5) * Math.exp(-3.2 * r)).toFixed(3) + 'px';
+        emma.style.letterSpacing = (-HIT * Math.cos(r * Math.PI * (comeback ? 2.5 : 1.5)) * Math.exp(-3.2 * r)).toFixed(3) + 'px';
       } else return done();
       requestAnimationFrame(frame);
     }
-    setTimeout(() => requestAnimationFrame(frame), hold); // let "Emma's bachelorette" be read first
+    setTimeout(() => { if (run !== lockupRun) return; lockupBusy = true; requestAnimationFrame(frame); }, hold); // let "Emma's bachelorette" be read first
   }
 
   // ── boot ───────────────────────────────────────────────
