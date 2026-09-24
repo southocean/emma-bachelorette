@@ -859,3 +859,7 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   /* admin tabs stay on desktop */
   .tabs #secretTab { display: none !important; }
 }
+@media (max-width: 820px) {
+  /* the next card rises into place as you swipe (the swipe drives it) */
+  .detail.peek { transform: translateY(calc(var(--sheet-y, 0px) + var(--peek-lift, 56px))) scale(var(--peek-s, .93)); }
+}

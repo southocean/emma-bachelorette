@@ -352,6 +352,7 @@
     const p = Math.min(1, Math.abs(x) / (innerWidth * .55));
     peekEl.style.setProperty('--peek-s', (.93 + .07 * p).toFixed(3));
     peekEl.style.setProperty('--peek-o', (.55 + .45 * p).toFixed(3));
+    peekEl.style.setProperty('--peek-lift', ((1 - p) * 56).toFixed(1) + 'px'); // rises into place with the swipe
   };
   function swipeTo(dir) {
     const next = neighbour(sel, dir);
@@ -360,7 +361,7 @@
     dEl.classList.remove('dragging'); peekEl.classList.remove('dragging');
     dEl.classList.add('flying');
     setSheetX((dir > 0 ? -1 : 1) * innerWidth * 1.15, 70);         // out along the diagonal
-    peekEl.style.setProperty('--peek-s', 1); peekEl.style.setProperty('--peek-o', 1);
+    peekEl.style.setProperty('--peek-s', 1); peekEl.style.setProperty('--peek-o', 1); peekEl.style.setProperty('--peek-lift', '0px');
     setTimeout(() => {
       dEl.classList.add('dragging'); setSheetX(0);                  // the top card is now the one underneath
       select(next);
@@ -1052,7 +1053,7 @@
   let taps = 0, tapTimer;
   const logo = $('#logo');
   logo.addEventListener('click', e => {
-    playLockup(700); // the logo replays the title's gag
+    toggleLockup(); // the logo flips the title back and forth
     if (isAdmin()) { if (!isPhone()) showTab('secret'); return; }
     taps++;
     clearTimeout(tapTimer); tapTimer = setTimeout(() => { taps = 0; }, 2500);
@@ -1169,12 +1170,57 @@
   // right at a constant speed, hit "'s bachelorette" and crush it against "Emma"
   // (it narrows from its left edge and fades), and "Emma" takes the blow: its letters
   // squeeze together, spring back past normal, and settle.
-  let lockupRun = 0;
+  let lockupRun = 0, lockupBusy = false;
+  // The logo flips the title: on "Emma in Helsinki" it plays the reverse (the
+  // bachelorette springs back and shoves "in Helsinki" away); on "Emma's
+  // bachelorette" it plays the crash straight away. Taps mid-animation are ignored.
+  function toggleLockup() {
+    if (lockupBusy) return;
+    if ($('#lockup').classList.contains('done')) unplayLockup(); else playLockup(0);
+  }
+  function unplayLockup() {
+    const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
+    const run = ++lockupRun;
+    const end = () => { if (run !== lockupRun) return; lockupBusy = false; [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { lk.classList.remove('done'); return end(); }
+    lockupBusy = true;
+    // measure "'s bachelorette" at full size, then start it folded shut behind "Emma"
+    lk.classList.remove('done');
+    old.style.width = 'auto'; const W = old.getBoundingClientRect().width;
+    old.style.width = '0px'; old.style.transform = 'scaleX(0)'; old.style.opacity = 0;
+    nw.style.opacity = 1; nw.style.transform = 'translateX(0)';
+    const SPRING = 560, OUT = 380;
+    let t0 = 0;
+    // a spring that overshoots: 0 → ~1.12 → settles at 1
+    const spring = x => 1 - Math.cos(x * Math.PI * 1.25) * Math.exp(-4.2 * x);
+    function frame(now) {
+      if (run !== lockupRun) return;
+      if (!t0) t0 = now;
+      const t = now - t0;
+      if (t < SPRING) {
+        const s = Math.max(0, spring(t / SPRING));
+        old.style.width = (W * Math.min(s, 1.14)).toFixed(2) + 'px';
+        old.style.transform = `scaleX(${Math.min(s, 1.14).toFixed(4)})`;
+        old.style.opacity = Math.min(1, t / 90).toFixed(3);
+        // "in Helsinki" takes the shove: carried right by the growing word, then sent off
+        const push = Math.max(0, (t - SPRING * .18) / (SPRING * .82));
+        nw.style.transform = `translateX(${(push * push * 150).toFixed(1)}px) rotate(${(push * 8).toFixed(2)}deg)`;
+        nw.style.opacity = Math.max(0, 1 - push * 1.3).toFixed(3);
+        emma.style.letterSpacing = (t < 140 ? -.8 * (t / 140) : -.8 * Math.max(0, 1 - (t - 140) / 260)).toFixed(3) + 'px';
+      } else if (t < SPRING + OUT) {
+        old.style.width = W + 'px'; old.style.transform = 'scaleX(1)'; old.style.opacity = 1;
+        nw.style.opacity = 0;
+      } else return end();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
   function playLockup(hold = 2000) {
     const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
     const run = ++lockupRun; // a replay cancels whatever run is still going
     lk.classList.remove('done'); [emma, old, nw].forEach(x => x.removeAttribute('style'));
-    const done = () => { if (run !== lockupRun) return; lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    const done = () => { if (run !== lockupRun) return; lockupBusy = false; lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    lockupBusy = true;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return done();
     const W = old.getBoundingClientRect().width;
     const FROM = 120, V0 = .36, APPROACH = FROM / V0, CRUSH = 360, RECOIL = 460;
