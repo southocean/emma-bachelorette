@@ -800,3 +800,9 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   .detail { z-index: 1100; } /* above Leaflet's controls (1000), e.g. the attribution */
   .detail .x { z-index: 6; }
 }
+
+/* the logo stands out from the page: a pink ring and a soft pink glow */
+.logo {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent), 0 4px 14px rgba(181, 72, 95, .28);
+}

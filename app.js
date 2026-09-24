@@ -1098,24 +1098,8 @@
     if (!quiet) { showTab('secret'); confetti(); }
   }
 
-  // ── light / dark ───────────────────────────────────────
-  const themeBtn = $('#theme');
-  const sysDark = matchMedia('(prefers-color-scheme: dark)');
-  const current = () => document.documentElement.dataset.theme || (sysDark.matches ? 'dark' : 'light');
-  function paintTheme() {
-    const d = current() === 'dark';
-    themeBtn.textContent = d ? '☀️' : '🌙';
-    themeBtn.title = d ? 'Light mode' : 'Dark mode';
-  }
-  themeBtn.onclick = () => {
-    const next = current() === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    store.set('emma_theme', next);
-    paintTheme();
-    route?.setStyle({ color: getComputedStyle(document.documentElement).getPropertyValue(`--d-${day}`).trim() });
-  };
-  sysDark.addEventListener?.('change', paintTheme);
-  paintTheme();
+  // Light theme only (Nam: no dark mode). The dark tokens in styles.css stay inert,
+  // because <html data-theme="light"> switches them off.
 
   // ── phone / desktop placement ──────────────────────────
   const clockEl = $('#clock'), mapwrap = $('.mapwrap'), stickyEl = $('.side .sticky');
