@@ -547,3 +547,17 @@ dialog#gate::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur
   .clock { top: 56px; left: 8px; }
   .filters { top: auto; bottom: 8px; left: 8px; right: 8px; }
 }
+
+/* hovering the bar (or a bubble being up) lifts every block at once, so all the numbers show */
+.times:hover .tl-seg.tl-act, .times.expanded .tl-seg.tl-act { height: 18px; border-radius: 5px; }
+.times:hover .tl-seg.tl-act b, .times.expanded .tl-seg.tl-act b { opacity: 1; }
+.times:hover .tl-seg.tl-go, .times.expanded .tl-seg.tl-go,
+.times:hover .tl-seg.tl-walk, .times.expanded .tl-seg.tl-walk { height: 7px; }
+.times:hover .tl-seg.tl-go.can-open, .times.expanded .tl-seg.tl-go.can-open { height: 11px; }
+.times:hover .tl-seg.tl-note, .times.expanded .tl-seg.tl-note { height: 5px; }
+
+/* the bubble is clickable when there is a card behind it */
+.tl-tip { pointer-events: auto; }
+.tl-tip.can-open { cursor: pointer; }
+.tl-tip.can-open:hover { border-color: var(--dc); }
+.tl-tip .tt-go { margin-left: 4px; color: var(--dc); font-weight: 700; font-size: 16px; line-height: 1; }

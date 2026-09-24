@@ -280,7 +280,8 @@
     closeDetail();
     if (viaSearch && searchQ()) openResults();
   }
-  map.on('click', () => { closeDetail(); closeResults(); });
+  map.on('click', () => { closeDetail(); closeResults(); hideTip(); });
+  map.on('mousedown', () => hideTip());
   addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     if (!dEl.hidden) dismissCard(); else if (resultsOpen) closeResults();
@@ -508,7 +509,7 @@
     const hours = (hi - lo) / 60, step = hours > 10 ? 2 : 1;
     const ticks = [];
     for (let m = Math.ceil(lo / 60) * 60; m <= hi; m += 60) {
-      const minor = (m / 60) % step !== 0;
+      const minor = (m / 60) % step !== 0 || m >= hi;
       ticks.push(`<span class="tl-tick ${minor ? 'minor' : ''}" style="left:${pct(m)}"><i>${minor ? '' : fmtT(m).slice(0, 2)}</i></span>`);
     }
     timesEl.innerHTML = `
@@ -528,8 +529,10 @@
     if (!sg || !tip || !seg) return;
     tipFor = i;
     const kind = sg.k === 'act' ? `<span class="tt-n">${sg.n}</span>` : `<span class="tt-ic">${sg.icon}</span>`;
-    tip.innerHTML = `${kind}<span class="tt-body"><b>${esc(sg.label)}</b><small>${fmtT(sg.start)}–${fmtT(sg.end)} · ${fmtDur(sg.end - sg.start)}${sg.k === 'go' || sg.k === 'walk' ? ' on the way' : ''}</small></span>`;
+    tip.innerHTML = `${kind}<span class="tt-body"><b>${esc(sg.label)}</b><small>${fmtT(sg.start)}–${fmtT(sg.end)} · ${fmtDur(sg.end - sg.start)}${sg.k === 'go' || sg.k === 'walk' ? ' on the way' : ''}</small></span>${sg.place ? '<span class="tt-go" aria-hidden="true">›</span>' : ''}`;
+    tip.classList.toggle('can-open', !!sg.place);
     tip.hidden = false;
+    timesEl.classList.add('expanded');
     // keep the tip inside the bar
     const box = timesEl.getBoundingClientRect(), r = seg.getBoundingClientRect();
     const w = tip.offsetWidth, x = Math.max(0, Math.min(box.width - w, r.left - box.left + r.width / 2 - w / 2));
@@ -543,20 +546,28 @@
     tipFor = -1;
     const tip = timesEl.querySelector('.tl-tip'); if (tip) tip.hidden = true;
     timesEl.querySelectorAll('.tl-seg.hot').forEach(b => b.classList.remove('hot'));
+    timesEl.classList.remove('expanded');
   }
   timesEl.addEventListener('pointerover', e => {
+    if (e.target.closest('.tl-tip')) { clearTimeout(tipTimer); return; } // reading the bubble keeps it
     const b = e.target.closest('button.tl-seg');
     if (b && e.pointerType !== 'touch') { clearTimeout(tipTimer); showTip(+b.dataset.seg); }
   });
   // leaving a block (or the bar) lets the tip linger a moment, then it goes
   timesEl.addEventListener('pointerout', e => {
     if (e.pointerType === 'touch') return;
-    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('button.tl-seg')) hideSoon(2900);
+    const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget : null;
+    if (!to || !(to.closest('button.tl-seg') || to.closest('.tl-tip'))) hideSoon(2900);
   });
   timesEl.addEventListener('mouseleave', () => hideSoon(2700));
   let lastPointer = 'mouse';
   timesEl.addEventListener('pointerdown', e => { lastPointer = e.pointerType; });
   timesEl.addEventListener('click', e => {
+    if (e.target.closest('.tl-tip')) { // the bubble opens what it describes
+      const sg = barSegs[tipFor];
+      if (sg && sg.place) { hideTip(); select(sg.place); }
+      return;
+    }
     const b = e.target.closest('button.tl-seg'); if (!b) return;
     const i = +b.dataset.seg, sg = barSegs[i];
     // on a phone the first tap explains (and fades after a few seconds), the second opens
