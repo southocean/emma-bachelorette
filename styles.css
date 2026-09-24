@@ -489,3 +489,23 @@ dialog#gate::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur
   .clock .face { width: 64px; height: 64px; }
 }
 @media (prefers-reduced-motion: reduce) { .clock, .times, .tl-seg { transition: none; } }
+/* an invisible clock must not sit on top of the day bar and eat taps */
+.clock[hidden] { display: none; }
+.clock:not(.in) { pointer-events: none; }
+
+.tl-tiny { pointer-events: none; }
+.s-line { font-size: 11px; }
+
+/* logistics links: roomy tap targets on phones, a quiet text link on desktop that
+   opens up on hover */
+@media (hover: hover) and (pointer: fine) {
+  .go-open {
+    background: none; border: 1px solid transparent; padding: 1px 6px 1px 4px; margin: 0 0 0 -4px;
+    transition: background .15s, border-color .15s;
+  }
+  .go-open .gt { text-decoration: underline dotted color-mix(in srgb, var(--dc) 70%, transparent); text-underline-offset: 3px; }
+  .go-open .go-more { opacity: 0; transform: translateX(-4px); transition: opacity .15s, transform .15s; }
+  .go-open:hover, .go-open:focus-visible { background: var(--surface-2); border-color: var(--dc); border-style: dashed; }
+  .go-open:hover .go-more, .go-open:focus-visible .go-more { opacity: 1; transform: none; }
+  .go.sel .go-open { background: color-mix(in srgb, var(--dc) 12%, var(--surface)); border-color: var(--dc); border-style: solid; }
+}

@@ -56,6 +56,8 @@
     });
   }
   indexPlan();
+  // transit directions for a transfer card: from its start activity to its end one
+  const GDIR = p => { const f = byId[p.from], t = byId[p.to]; return f && t ? `https://www.google.com/maps/dir/?api=1&origin=${f.lat},${f.lng}&destination=${t.lat},${t.lng}&travelmode=transit` : 'https://www.google.com/maps'; };
   const GMAP = p => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
   const PIN_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>';
 
@@ -82,7 +84,7 @@
       .on('click', () => select(p.id, { fly: false }));
     markers[p.id] = m;
   }
-  PLACES.forEach(addMarker);
+  PLACES.filter(p => !p.virtual).forEach(addMarker);
 
   // ── filters ────────────────────────────────────────────
   const on = Object.fromEntries(Object.keys(CATS).map(k => [k, true]));
@@ -100,7 +102,7 @@
   let route;
   function drawMarkers() {
     secretPlaces.forEach(p => { if (!secretOn) markers[p.id].remove(); });
-    allPlaces().forEach(p => {
+    allPlaces().filter(p => markers[p.id]).forEach(p => {
       const inDay = (planIndex[p.id] || []).some(h => h.day === day);
       const show = inDay || on[p.cat];
       const m = markers[p.id];
@@ -116,7 +118,7 @@
     const pts = [];
     P[day].steps.forEach(s => {
       const id = s.act || (s.go && s.place !== 'airport' ? s.place : null);
-      if (!id) return;
+      if (!id || !byId[id] || byId[id].virtual) return;
       const p = byId[id], last = pts[pts.length - 1];
       if (!last || last.id !== p.id) pts.push(p);
     });
@@ -141,8 +143,7 @@
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = id;
     const m = markers[id];
-    if (!m._map) m.addTo(map);
-    m.getElement()?.classList.add('sel');
+    if (m) { if (!m._map) m.addTo(map); m.getElement()?.classList.add('sel'); }
 
     const hits = planIndex[id] || [];
     const gos = goIndex[id] || [];
@@ -165,12 +166,12 @@
         <div><dt>Energy</dt><dd class="energy" title="${p.energy} of 3">${energy}</dd></div>
       </dl>
       ${from ? `<div class="dist">From <b>${esc(from.name)}</b>: ${howFar(from, p)}</div>` : ''}
-      <p class="what">${esc(p.what)}</p>
+      ${p.what ? `<p class="what">${esc(p.what)}</p>` : ''}
       ${cardBlocks(p)}
       ${p.tips.length ? `<ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <div class="actions">
-        <a class="primary" href="${GMAP(p)}" target="_blank" rel="noopener">Open in Maps</a>
-        <button data-origin>${origin === id ? '✓ Measuring from here' : 'Measure distances from here'}</button>
+        <a class="primary" href="${p.virtual ? GDIR(p) : GMAP(p)}" target="_blank" rel="noopener">${p.virtual ? 'Directions in Maps' : 'Open in Maps'}</a>
+        ${p.virtual ? '' : `<button data-origin>${origin === id ? '✓ Measuring from here' : 'Measure distances from here'}</button>`}
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
     dEl.style.setProperty('--dc', DAYC[day]);
@@ -179,11 +180,12 @@
     reveal(p, fly);
     markActive(id);
     $('.x', dEl).onclick = dismissCard;
-    $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
+    if ($('[data-origin]', dEl)) $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
   }
   // ── card blocks: the structured parts of a place, drawn instead of written ──
   const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-  const LINE = { I: '#8c4799', P: '#8c4799', 19: '#00b9e4' };
+  const MODE_COL = { train: '#8c4799', metro: '#ff6319', tram: '#00985f', bus: '#007ac9', ferry: '#00b9e4' };
+  const MODE_IC = { train: '🚆', metro: 'Ⓜ', tram: '🚊', bus: '🚌', ferry: '⛴' };
   const DAYNAME = { fri: 'Fri', sat: 'Sat', sun: 'Sun' };
   // when we are at this place on a given day: from its step to the next step in the plan
   function visitOn(id, d) {
@@ -203,11 +205,12 @@
       const list = p.schedules.slice().sort((x, y) => (y.day === day) - (x.day === day));
       h += list.map(sc => `<section class="sched ${sc.day === day ? 'today' : 'other'}">
         <h4>${esc(sc.title)}</h4>${sc.note ? `<p class="sched-note">${esc(sc.note)}</p>` : ''}
-        <ol>${sc.rows.map(([dep, arr, tag, line, track]) => {
+        <ol>${sc.rows.map(([dep, arr, tag, line, track, mode]) => {
+          const md = mode || sc.mode;
           const ln = line || sc.line || '', mins = toMin(arr) - toMin(dep) + (toMin(arr) < toMin(dep) ? 1440 : 0);
           return `<li class="${tag === 'ours' ? 'ours' : ''}">
             <span class="s-time"><b>${dep}</b><span class="s-dash">→</span>${arr}</span>
-            ${ln ? `<span class="s-line" style="background:${LINE[ln] || 'var(--ink-2)'}">${sc.mode === 'ferry' ? '⛴' : ''}${esc(ln)}</span>` : ''}
+            ${ln ? `<span class="s-line" style="background:${MODE_COL[md] || 'var(--ink-2)'}" title="${md}">${esc(ln)}</span>` : `<span class="s-line" style="background:${MODE_COL[md] || 'var(--ink-2)'}">${MODE_IC[md] || ''}</span>`}
             <span class="s-min">${mins} min</span>
             ${track ? `<span class="s-track">${esc(track)}</span>` : ''}
             ${tag ? `<span class="s-tag">${tag === 'ours' ? '★ ours' : esc(tag)}</span>` : ''}
@@ -236,8 +239,21 @@
   }
 
   // Keep the chosen place visible beside the card instead of underneath it.
-  function reveal(p, fly) {
-    const z = fly ? Math.max(map.getZoom(), 15) : map.getZoom();
+  function reveal(p, fly, zoom) {
+    if (p.virtual) {
+      // a transfer: zoom to fit both ends in the free part of the map (never wider than
+      // city level), then centre the leg's midpoint there like any other place
+      const ends = [byId[p.from], byId[p.to]].filter(Boolean);
+      if (!ends.length) return;
+      const b = L.latLngBounds(ends.map(x => [x.lat, x.lng]));
+      const card = dEl.getBoundingClientRect(), mapBox = map.getContainer().getBoundingClientRect();
+      const freeW = isPhone() ? mapBox.width - 60 : card.left - mapBox.left - 60;
+      const freeH = isPhone() ? card.top - mapBox.top - 150 : mapBox.height - 150;
+      const fitZ = map.getBoundsZoom(b, false, L.point(Math.max(0, mapBox.width - freeW), Math.max(0, mapBox.height - freeH)));
+      const mid = b.getCenter();
+      return reveal({ lat: mid.lat, lng: mid.lng }, true, Math.max(11, Math.min(15, fitZ)));
+    }
+    const z = zoom != null ? zoom : fly ? Math.max(map.getZoom(), 15) : map.getZoom();
     const size = map.getSize();
     const card = dEl.getBoundingClientRect(), mapBox = map.getContainer().getBoundingClientRect();
     // the free area of the map: to the left of the card on wide screens, above it on phones
@@ -475,11 +491,17 @@
     });
     return segs;
   }
+  // every day shares one hour scale, so a shorter day (Sunday) visibly ends earlier
+  function barRange() {
+    const all = Object.values(P).map(daySegments).filter(x => x.length);
+    return [Math.floor(Math.min(...all.map(x => x[0].start)) / 60) * 60, Math.ceil(Math.max(...all.map(x => x[x.length - 1].end)) / 60) * 60];
+  }
+  const TINY = 10; // minutes: shorter bits are drawn but not clickable
   function renderDayBar(d) {
     barSegs = daySegments(d);
     timesEl.style.setProperty('--dc', DAYC[day]);
     if (!barSegs.length) { timesEl.innerHTML = ''; return; }
-    const lo = Math.floor(barSegs[0].start / 60) * 60, hi = Math.ceil(barSegs[barSegs.length - 1].end / 60) * 60;
+    const [lo, hi] = barRange();
     const pct = m => ((m - lo) / (hi - lo) * 100).toFixed(3) + '%';
     const hours = (hi - lo) / 60, step = hours > 10 ? 2 : 1;
     const ticks = [];
@@ -488,7 +510,9 @@
       <div class="tl-scale">${ticks.join('')}</div>
       <div class="tl-track">${barSegs.map((sg, i) => {
         const style = `left:${pct(sg.start)};width:calc(${pct(sg.end)} - ${pct(sg.start)});--i:${i}`;
-        const inner = sg.k === 'act' ? `<b>${sg.n}</b>` : `<em>${sg.icon}</em>`;
+        const inner = sg.k === 'act' ? `<b>${sg.n}</b>` : '';
+        if (sg.k !== 'act' && (sg.k === 'walk' || sg.end - sg.start < TINY))
+          return `<span class="tl-seg tl-${sg.k} tl-tiny" style="${style}" aria-hidden="true"></span>`;
         return `<button class="tl-seg tl-${sg.k}${sg.place ? ' can-open' : ''}" data-seg="${i}" style="${style}" aria-label="${esc(sg.label)}, ${fmtT(sg.start)} to ${fmtT(sg.end)}">${inner}</button>`;
       }).join('')}</div>
       <div class="tl-tip" hidden></div>`;
@@ -507,24 +531,33 @@
     tip.style.left = x + 'px';
     timesEl.querySelectorAll('.tl-seg').forEach(b => b.classList.toggle('hot', +b.dataset.seg === i));
   }
+  let tipTimer = 0;
+  const hideSoon = ms => { clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, ms); };
   function hideTip() {
+    clearTimeout(tipTimer);
     tipFor = -1;
     const tip = timesEl.querySelector('.tl-tip'); if (tip) tip.hidden = true;
     timesEl.querySelectorAll('.tl-seg.hot').forEach(b => b.classList.remove('hot'));
   }
   timesEl.addEventListener('pointerover', e => {
-    const b = e.target.closest('.tl-seg'); if (b && e.pointerType !== 'touch') showTip(+b.dataset.seg);
+    const b = e.target.closest('button.tl-seg');
+    if (b && e.pointerType !== 'touch') { clearTimeout(tipTimer); showTip(+b.dataset.seg); }
   });
-  timesEl.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') hideTip(); });
+  // leaving a block (or the bar) lets the tip linger a moment, then it goes
+  timesEl.addEventListener('pointerout', e => {
+    if (e.pointerType === 'touch') return;
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('button.tl-seg')) hideSoon(900);
+  });
+  timesEl.addEventListener('mouseleave', () => hideSoon(700));
   let lastPointer = 'mouse';
   timesEl.addEventListener('pointerdown', e => { lastPointer = e.pointerType; });
   timesEl.addEventListener('click', e => {
-    const b = e.target.closest('.tl-seg'); if (!b) return;
+    const b = e.target.closest('button.tl-seg'); if (!b) return;
     const i = +b.dataset.seg, sg = barSegs[i];
-    // on a phone the first tap explains, the second opens
-    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); return; }
+    // on a phone the first tap explains (and fades after a few seconds), the second opens
+    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); hideSoon(3500); return; }
     if (sg.place) { hideTip(); select(sg.place); }
-    else showTip(i);
+    else { showTip(i); hideSoon(2500); }
   });
 
   // The open card's activity lights up in the plan list (scrolled into view on wide

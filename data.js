@@ -210,12 +210,12 @@ window.PLACES = [
       { day: 'fri', title: 'Fri 2 Oct · HEL → Central Station', note: 'You land 22:35 (flight from ARN 20:40). Gate to platform ≈ 15–20 min.', mode: 'train', rows: [
         ['22:42', '23:11', 'too soon', 'P', 'track 1'], ['22:57', '23:26', 'ours', 'P', 'track 1'], ['23:04', '23:38', '', 'I', 'track 2'],
         ['23:12', '23:41', 'if we\'re slow', 'P', 'track 1'], ['23:27', '23:56', '', 'P', 'track 1'] ] },
-      { day: 'sun', title: 'Sun 4 Oct · Central Station → HEL', note: 'Flight to ARN 21:15. Be at the airport by ≈ 19:45.', mode: 'train', rows: [
-        ['18:56', '19:23', '', 'I', 'track 2'], ['19:06', '19:33', 'ours', 'I', 'track 4'], ['19:08', '19:41', '', 'P', 'track 19'],
-        ['19:16', '19:43', 'backup', 'I', 'track 3'], ['19:26', '19:53', 'latest', 'I', 'track 4'] ] },
+      { day: 'sun', title: 'Sun 4 Oct · Central Station → HEL', note: 'Flight to ARN 21:15, inside Schengen (no passport control): ~1 h at the airport is plenty.', mode: 'train', rows: [
+        ['19:16', '19:43', 'extra calm', 'I', 'track 3'], ['19:26', '19:53', '', 'I', 'track 4'], ['19:36', '20:03', 'ours', 'I', 'track 1'],
+        ['19:46', '20:13', 'latest', 'I', 'track 4'], ['19:48', '20:21', 'too late', 'P', 'track 19'] ] },
     ],
     prices: { rows: [['📱', 'ABC single, HSL app', '€4.50'], ['💳', 'ABC single, tap a bank card', '€4.80'], ['🎫', 'Sunday: the ABC day ticket covers it', '€0']] },
-    tips: ['Buy before boarding: no conductors, and inspectors check.', 'Tickets are valid 90 min. Get the HSL app before you fly.', 'Timetable: Fintraffic open data for 2 & 4 Oct 2026. Check the HSL app on the day.'],
+    tips: ['Buy before boarding: no conductors, and inspectors check.', 'Checking a bag? Bag drop usually closes ~40 min before departure: the 19:36 still leaves room.', 'Tickets are valid 90 min. Get the HSL app before you fly.', 'Timetable: Fintraffic open data for 2 & 4 Oct 2026. Check the HSL app on the day.'],
     url: 'https://www.hsl.fi/en/travelling/visitors/airport-train',
   },
   {
@@ -431,6 +431,95 @@ window.PLACES = [
   },
 ];
 
+// Transfers between activities: one clickable step each, drawn as legs + real departures.
+// virtual: no map pin; the map fits `from` → `to` (place ids) when the card opens.
+// schedule rows: [dep, arr, tag, line, platform, mode]
+window.TRIPS = [
+  {
+    id: 'trip-sat-1', name: 'Metro to Itis', venue: 'Kamppi → Itäkeskus', cat: 'practical', virtual: true, from: 'saigonese', to: 'activate',
+    hook: 'M1 or M2 eastbound · 16 min · every ~4 min',
+    what: '', cost: 'HSL day ticket ≈ €11 (buy it now)', costPP: 0, time: '≈ 30 min door to door', energy: 1,
+    journey: [['🚶', 'Kamppi metro', '5 min walk'], ['🚇', 'M1 / M2 east', '16 min'], ['🚶', 'Itis, 2nd floor', '3 min walk']],
+    schedules: [{ day: 'sat', title: 'Metro · Kamppi → Itäkeskus', mode: 'metro', rows: [
+      ['13:05', '13:21', '', 'M2'], ['13:09', '13:25', '', 'M1'], ['13:13', '13:29', 'ours', 'M2'], ['13:17', '13:33', '', 'M1'], ['13:20', '13:36', 'latest', 'M2'] ] }],
+    tips: ['Any eastbound train works: M1 (Vuosaari) and M2 (Mellunmäki) both stop at Itäkeskus.'],
+  },
+  {
+    id: 'trip-sat-2', name: 'Metro + ferry to Suomenlinna', venue: 'Itäkeskus → Helsingin yliopisto → Market Square → Suomenlinna', cat: 'practical', virtual: true, from: 'activate', to: 'suomenlinna',
+    hook: 'Metro 13 min, walk 7 min, ferry 15 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 50 min', energy: 1,
+    journey: [['🚶', 'Itäkeskus metro', '3 min'], ['🚇', 'M1 / M2 west', '13 min'], ['🚶', 'Market Square', '7 min'], ['⛴️', 'Ferry 19', '15 min']],
+    schedules: [
+      { day: 'sat', title: 'Metro · Itäkeskus → Helsingin yliopisto', mode: 'metro', rows: [
+        ['14:55', '15:08', 'ours', 'M2'], ['14:58', '15:12', 'tight for the ferry', 'M1'] ] },
+      { day: 'sat', title: 'Ferry · Market Square → Suomenlinna', mode: 'ferry', line: '19', rows: [
+        ['15:20', '15:35', 'ours'], ['15:40', '15:55', 'if we miss it'] ] },
+    ],
+    tips: ['Get off at Helsingin yliopisto and walk down to the harbour; the ferry leaves from the east corner of Market Square.'],
+  },
+  {
+    id: 'trip-sat-3', name: 'Ferry + tram to the sauna', venue: 'Suomenlinna → Market Square → Kallio', cat: 'practical', virtual: true, from: 'suomenlinna', to: 'kotiharju',
+    hook: 'Ferry 15 min, tram 7 11 min, short walks',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 40 min', energy: 1,
+    journey: [['⛴️', 'Ferry 19', '15 min'], ['🚶', 'Senaatintori stop', '3 min'], ['🚊', 'Tram 7', '11 min'], ['🚶', 'Kotiharju', '6 min from Lintulahti']],
+    schedules: [
+      { day: 'sat', title: 'Ferry · Suomenlinna → Market Square', mode: 'ferry', line: '19', rows: [
+        ['16:40', '16:55'], ['17:00', '17:15', 'ours'], ['17:20', '17:35', 'latest'] ] },
+      { day: 'sat', title: 'Tram 7 · Senaatintori → Lintulahti', mode: 'tram', line: '7', rows: [
+        ['17:22', '17:33', 'ours'], ['17:32', '17:43', 'if we\'re slow'] ] },
+    ],
+    tips: ['Metro alternative: Helsingin yliopisto → Sörnäinen, 3 min, then 5 min on foot.'],
+  },
+  {
+    id: 'trip-sat-4', name: 'Metro to Quê Em', venue: 'Sörnäinen → Kamppi', cat: 'practical', virtual: true, from: 'kotiharju', to: 'queem',
+    hook: 'M1 or M2 west · 6 min · every ~4 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 15 min', energy: 1,
+    journey: [['🚶', 'Sörnäinen metro', '5 min'], ['🚇', 'M1 / M2 west', '6 min'], ['🚶', 'Quê Em', '3 min']],
+    schedules: [{ day: 'sat', title: 'Metro · Sörnäinen → Kamppi', mode: 'metro', rows: [
+      ['19:39', '19:45', 'ours', 'M1'], ['19:42', '19:48', '', 'M2'], ['19:46', '19:52', 'latest', 'M1'] ] }],
+    tips: ['Door-to-door option: tram 9 from Helsinginkatu (right by the sauna) to Simonkatu, 14 min.'],
+  },
+  {
+    id: 'trip-sat-5', name: 'Tram to karaoke', venue: 'Simonkatu → Fleminginkatu', cat: 'practical', virtual: true, from: 'queem', to: 'populus',
+    hook: 'Tram 9, door to door · 14 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 20 min', energy: 1,
+    journey: [['🚶', 'Simonkatu stop', '2 min'], ['🚊', 'Tram 9', '14 min'], ['🎤', 'Populus', 'next to the stop']],
+    schedules: [{ day: 'sat', title: 'Tram 9 · Simonkatu → Fleminginkatu', mode: 'tram', line: '9', rows: [
+      ['21:41', '21:55', 'ours'], ['21:29', '21:43', 'if dinner is quick'] ] },
+      { day: 'sat', title: 'Or metro · Kamppi → Sörnäinen, + 7 min walk', mode: 'metro', rows: [
+      ['21:35', '21:40', '', 'M1'], ['21:40', '21:45', '', 'M2'] ] }],
+    tips: [],
+  },
+  {
+    id: 'trip-sun-1', name: 'Tram to Quê Em', venue: 'Hallituskatu → Simonkatu', cat: 'practical', virtual: true, from: 'senate', to: 'queem',
+    hook: 'Tram 7 · 8 min · or a 20-min walk',
+    what: '', cost: 'HSL ABC day ticket €12.80 (covers the airport)', costPP: 0, time: '≈ 15 min', energy: 1,
+    journey: [['🚶', 'Hallituskatu stop', '1 min'], ['🚊', 'Tram 7', '8 min'], ['🚶', 'Quê Em', '1 min']],
+    schedules: [{ day: 'sun', title: 'Tram 7 · Hallituskatu → Simonkatu', mode: 'tram', line: '7', rows: [
+      ['12:45', '12:52', 'if we\'re early'], ['12:57', '13:05', 'ours'] ] }],
+    tips: ['Buy the ABC day ticket now: it covers the trams and the airport train tonight.', 'Also fine: M1/M2 from Helsingin yliopisto to Kamppi, 3 min.'],
+  },
+  {
+    id: 'trip-sun-2', name: 'Bus to Café Regatta', venue: 'Kamppi → Sibeliuksen puisto', cat: 'practical', virtual: true, from: 'queem', to: 'regatta',
+    hook: 'Bus 25 · 9 min · then 4 min on foot',
+    what: '', cost: 'In the ABC day ticket', costPP: 0, time: '≈ 20 min', energy: 1,
+    journey: [['🚶', 'Kamppi bus stop', '3 min'], ['🚌', 'Bus 25', '9 min'], ['🚶', 'Café Regatta', '4 min']],
+    schedules: [{ day: 'sun', title: 'Bus · Kamppi → Sibeliuksen puisto', mode: 'bus', rows: [
+      ['14:47', '14:56', 'if we stop eating early', '25'], ['15:07', '15:16', 'ours', '25'], ['15:12', '15:24', '', '24'] ] }],
+    tips: [],
+  },
+  {
+    id: 'trip-sun-3', name: 'Tram back to the centre', venue: 'Töölön halli → Aleksanterinkatu', cat: 'practical', virtual: true, from: 'sibelius', to: 'fazer',
+    hook: '8 min walk, then tram 2 or 4 · 11 min',
+    what: '', cost: 'In the ABC day ticket', costPP: 0, time: '≈ 25 min', energy: 1,
+    journey: [['🚶', 'Töölön halli stop', '8 min'], ['🚊', 'Tram 2 / 4', '11 min'], ['☕', 'Fazer Café', '1 min']],
+    schedules: [{ day: 'sun', title: 'Tram · Töölön halli → Aleksanterinkatu', mode: 'tram', rows: [
+      ['16:43', '16:54', '', '4'], ['16:51', '17:02', 'ours', '2'], ['16:55', '17:06', 'latest', '4'] ] }],
+    tips: [],
+  },
+];
+window.PLACES.push(...window.TRIPS);
+
 // The day-by-day plan. Three kinds of step:
 //   { t, act: placeId, do, name? }      an activity: numbered, on the map, has a card
 //                                        (name overrides the place name in the plan)
@@ -451,19 +540,18 @@ window.PLAN = {
     label: 'Sat 3 Oct', title: 'The big day',
     steps: [
       { t: '09:30', note: 'Breakfast at home, build Emma\'s tray.' },
-      { t: '10:30', go: 'Alko Arkadia for the bubbles (opens 9:00, closed Sunday)', icon: '🛒', place: 'alko', costPP: 4, label: 'Bubbles' },
+      { t: '10:30', go: 'Alko Arkadia for the bubbles (opens 9:00, closed Sunday)', icon: '🛒', place: 'alko', open: true, costPP: 4, label: 'Bubbles' },
       { t: '10:45', act: 'bauchladen', do: 'Emma sells her tray to Saturday shoppers.' },
       { t: '12:00', act: 'saigonese', do: 'Lunch at our friend\'s Vietnamese vegan kitchen.' },
-      { t: '13:10', go: 'Metro Kamppi → Itäkeskus, 15 min · buy the HSL day ticket', icon: '🚇', place: 'itakeskus', costPP: 11, label: 'HSL day ticket' },
+      { t: '13:05', go: 'Metro Kamppi → Itäkeskus · buy the HSL day ticket', icon: '🚇', place: 'trip-sat-1', open: true, costPP: 11, label: 'HSL day ticket' },
       { t: '13:45', act: 'activate', do: 'One hour of Activate, the four of us as one team.' },
-      { t: '14:55', go: 'Metro back to the centre, walk to Market Square', icon: '🚇' },
-      { t: '15:20', go: 'Ferry to Suomenlinna from Market Square', icon: '⛴️', place: 'ferry', open: true },
+      { t: '14:45', go: 'Metro + ferry to Suomenlinna', icon: '⛴️', place: 'trip-sat-2', open: true },
       { t: '15:40', act: 'suomenlinna', do: 'Film both on the sea cliffs, then wander back.' },
-      { t: '17:00', go: 'Ferry back to Market Square, tram to Kallio', icon: '⛴️', place: 'ferry', open: true },
+      { t: '17:00', go: 'Ferry back + tram 7 to Kallio', icon: '⛴️', place: 'trip-sat-3', open: true },
       { t: '17:45', act: 'kotiharju', do: 'Vihta, advice and one song each for Emma.' },
-      { t: '19:35', go: 'Metro Sörnäinen → Kamppi, ~15 min', icon: '🚇' },
+      { t: '19:30', go: 'Metro Sörnäinen → Kamppi', icon: '🚇', place: 'trip-sat-4', open: true },
       { t: '20:00', act: 'queem', name: 'Quê Em à la carte', do: 'Dinner à la carte: a first taste before tomorrow\'s buffet.', cost: 'à la carte ≈ €15–25', costPP: 20 },
-      { t: '21:30', go: 'Metro Kamppi → Sörnäinen, walk up to Populus', icon: '🚇' },
+      { t: '21:35', go: 'Tram 9 to Populus, door to door', icon: '🚊', place: 'trip-sat-5', open: true },
       { end: '24:00', t: '22:00', act: 'populus', do: 'Karaoke: Emma\'s solo, the group number.' },
     ],
   },
@@ -474,14 +562,14 @@ window.PLAN = {
       { t: '10:30', act: 'herring', do: 'Opening day: a light tasting, save room for the buffet.' },
       { t: '11:50', act: 'uspenski', do: 'Up the hill for the harbour view.' },
       { t: '12:20', act: 'senate', do: 'The cathedral, the steps, the group photo.' },
-      { t: '12:50', go: 'Tram or a 20-min walk to Kamppi · buy an ABC day ticket (covers the airport)', icon: '🚋', costPP: 12.8, label: 'HSL ABC day ticket' },
+      { t: '12:50', go: 'Tram 7 to Kamppi · buy an ABC day ticket (covers the airport)', icon: '🚊', place: 'trip-sun-1', open: true, costPP: 12.8, label: 'HSL ABC day ticket' },
       { t: '13:15', act: 'queem', name: 'Quê Em buffet', do: 'The €29.90 Vietnamese buffet, finally.', cost: '€29.90 buffet', costPP: 30 },
-      { t: '14:45', go: 'Tram to Töölö, ~15 min', icon: '🚋' },
-      { t: '15:00', act: 'regatta', do: 'Cinnamon buns and letters to future Emma.' },
-      { t: '16:05', act: 'sibelius', do: '600 steel pipes, all four of us in front.' },
-      { t: '16:30', go: 'Tram back to the centre, ~20 min', icon: '🚋' },
-      { t: '17:00', act: 'fazer', do: 'Fazer\'s flagship café before the train.' },
-      { end: '21:15', t: '18:45', go: 'Bags from the lockers · airport train ~19:00 · flight 21:15', icon: '✈️', place: 'airport', open: true },
+      { t: '15:00', go: 'Bus 25 to Sibelius Park', icon: '🚌', place: 'trip-sun-2', open: true },
+      { t: '15:20', act: 'regatta', do: 'Cinnamon buns and letters to future Emma.' },
+      { t: '16:20', act: 'sibelius', do: '600 steel pipes, all four of us in front.' },
+      { t: '16:40', go: 'Tram 2 back to the centre', icon: '🚊', place: 'trip-sun-3', open: true },
+      { t: '17:05', act: 'fazer', do: 'Fazer\'s flagship café, then a last wander.' },
+      { end: '21:15', t: '19:15', go: 'Bags from the lockers · airport train 19:36 · flight 21:15', icon: '✈️', place: 'airport', open: true },
     ],
   },
 };
