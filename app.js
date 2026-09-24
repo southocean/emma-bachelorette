@@ -1064,7 +1064,7 @@
       } else return done();
       requestAnimationFrame(frame);
     }
-    setTimeout(() => requestAnimationFrame(frame), 1300); // let "Emma's bachelorette" be read first
+    setTimeout(() => requestAnimationFrame(frame), 3000); // let "Emma's bachelorette" be read first
   }
 
   // ── boot ───────────────────────────────────────────────
