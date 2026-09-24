@@ -37,11 +37,17 @@
   }).addTo(map);
 
   const markers = {};
-  const planIndex = {}; // id -> [{day, n}]
+  const planIndex = {}; // activity id -> [{day, n}]
+  const goIndex = {};   // logistics place id -> [day]
   Object.entries(PLAN).forEach(([day, d]) => {
     let n = 0;
-    d.steps.forEach(s => { if (s.place) { n++; (planIndex[s.place] ||= []).push({ day, n }); } });
+    d.steps.forEach(s => {
+      if (s.act) { n++; (planIndex[s.act] ||= []).push({ day, n }); }
+      else if (s.go && s.place) (goIndex[s.place] ||= []).includes(day) || goIndex[s.place].push(day);
+    });
   });
+  const GMAP = p => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+  const PIN_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>';
 
   function iconFor(p, day) {
     const hits = planIndex[p.id] || [];
@@ -97,20 +103,18 @@
     if (route) route.remove();
     const pts = [];
     PLAN[day].steps.forEach(s => {
-      if (!s.place || s.place === 'airport') return;
-      const p = byId[s.place];
-      const last = pts[pts.length - 1];
-      if (last && last.id === 'suomenlinna') pts.push(byId.ferry); // the ferry back
+      const id = s.act || (s.go && s.place !== 'airport' ? s.place : null);
+      if (!id) return;
+      const p = byId[id], last = pts[pts.length - 1];
       if (!last || last.id !== p.id) pts.push(p);
     });
-    route = L.polyline(pts.map(p => [p.lat, p.lng]), {
+    route = pts.length > 1 ? L.polyline(pts.map(p => [p.lat, p.lng]), {
       color: getComputedStyle(document.documentElement).getPropertyValue(`--${day}`).trim() || '#c2417a',
       weight: 3, opacity: .75, dashArray: '2 8', lineCap: 'round',
-    }).addTo(map);
-    const fit = pts.length > 1 ? pts : pts.concat(byId.station);
-    map.fitBounds(L.latLngBounds(fit.map(p => [p.lat, p.lng])), {
-      paddingTopLeft: [30, isPhone() ? 110 : 70], paddingBottomRight: [30, 30], maxZoom: 15,
-    });
+    }).addTo(map) : null;
+    const top = isPhone() ? 140 : 100; // clear the search box, chips and time strip
+    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lng])), { paddingTopLeft: [30, top], paddingBottomRight: [30, 30], maxZoom: 15 });
+    else map.setView([60.1699, 24.9384], 13);
   }
 
   // ── detail card ────────────────────────────────────────
@@ -129,9 +133,12 @@
     m.getElement()?.classList.add('sel');
 
     const hits = planIndex[id] || [];
+    const gos = goIndex[id] || [];
     const kick = hits.length
       ? hits.map(h => `<span style="color:${DAYC[h.day]}">${PLAN[h.day].label} · stop ${h.n}</span>`).join(' &nbsp; ')
-      : `<span style="color:${CATS[p.cat].color}">${esc(CATS[p.cat].label)} · alternative</span>`;
+      : gos.length
+        ? gos.map(d => `<span style="color:${DAYC[d]}">${PLAN[d].label} · on the way</span>`).join(' &nbsp; ')
+        : `<span style="color:${CATS[p.cat].color}">${esc(CATS[p.cat].label)} · alternative</span>`;
     const energy = '●'.repeat(p.energy) + '○'.repeat(3 - p.energy);
     const from = origin && origin !== id ? byId[origin] : null;
     dEl.innerHTML = `
@@ -148,7 +155,7 @@
       <p>${esc(p.what)}</p>
       ${p.tips.length ? `<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <div class="actions">
-        <a class="primary" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Open in Maps</a>
+        <a class="primary" href="${GMAP(p)}" target="_blank" rel="noopener">Open in Maps</a>
         <button data-origin>${origin === id ? '✓ Measuring from here' : 'Measure distances from here'}</button>
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
@@ -166,8 +173,8 @@
     // the free area of the map: to the left of the card on wide screens, above it on phones
     const wide = !isPhone();
     const free = wide
-      ? { x: (card.left - mapBox.left) / 2, y: size.y / 2 }
-      : { x: size.x / 2, y: (card.top - mapBox.top + 100) / 2 }; // below the search box and chips
+      ? { x: (card.left - mapBox.left) / 2, y: (size.y + 90) / 2 }
+      : { x: size.x / 2, y: (card.top - mapBox.top + 140) / 2 }; // below the search box, chips and times
     const pt = map.project([p.lat, p.lng], z);
     const inView = map.latLngToContainerPoint([p.lat, p.lng]);
     const covered = wide ? inView.x > card.left - mapBox.left - 20 : inView.y > card.top - mapBox.top - 20;
@@ -208,7 +215,7 @@
     name: fold(p.name),
     hook: fold(p.hook),
     rest: fold([p.what, p.tips.join(' '), p.cost, CATS[p.cat].label, (momentsAt[p.id] || []).join(' '),
-      (planIndex[p.id] || []).map(h => PLAN[h.day].label).join(' ') || 'alternative'].join(' ')),
+      (planIndex[p.id] || []).map(h => PLAN[h.day].label).join(' ') || (goIndex[p.id] ? 'logistics' : 'alternative')].join(' ')),
   }));
   const qEl = $('#q'), rEl = $('#results'), qClear = $('#qClear');
   let resultsOpen = false, active = -1, shown = [];
@@ -305,46 +312,63 @@
   qClear.onclick = () => { qEl.value = ''; qClear.hidden = true; closeResults(); qEl.focus(); };
 
   // ── plan tab ───────────────────────────────────────────
-  const daysEl = $('#days');
+  const daysEl = $('#days'), timesEl = $('#times');
   daysEl.innerHTML = Object.entries(PLAN).map(([k, d]) =>
-    `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)}</span></button>`).join('');
+    `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)} · ≈ €${Math.round(dayCost(k))}</span></button>`).join('');
   daysEl.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     setDay(b.dataset.day);
   });
 
-  function dayCost(k) {
-    const seen = new Set(); let sum = 0;
-    PLAN[k].steps.forEach(s => { if (s.place && !seen.has(s.place)) { seen.add(s.place); sum += byId[s.place].costPP; } });
-    return sum;
+  function stepCost(s) {
+    if (s.costPP != null) return s.costPP;
+    return s.act ? byId[s.act].costPP : 0;
   }
+  function dayCost(k) { return PLAN[k].steps.reduce((sum, s) => sum + stepCost(s), 0); }
 
   function renderDay() {
     const d = PLAN[day];
-    let n = 0, prev = null;
+    let n = 0, prevAct = null, goSince = false;
     const items = d.steps.map(s => {
-      const p = s.place ? byId[s.place] : null;
-      let walk = '';
-      if (p && prev && prev.id !== p.id && p.id !== 'airport') walk = `<div class="walk">↓ ${howFar(prev, p)}</div>`;
-      if (p) { n++; prev = p; }
-      const inner = `
-        <span class="row1"><span class="t">${esc(s.t)}</span>${p ? `<span class="c">${esc(p.cost)}</span>` : ''}</span>
-        ${p ? `<span class="n">${esc(p.name)}</span>` : ''}
-        <span class="d">${esc(s.do)}</span>`;
+      if (s.note) { goSince = true; return `<li class="note"><span class="t">${esc(s.t)}</span>${esc(s.note)}</li>`; }
+      if (s.go) {
+        goSince = true;
+        const txt = `<span class="gi" aria-hidden="true">${s.icon || '→'}</span><span class="gt"><b>${esc(s.t)}</b> ${esc(s.go)}</span>`;
+        return s.open && s.place
+          ? `<li class="go"><button class="go-open" data-place="${s.place}" title="More about ${esc(byId[s.place].name)}">${txt}<span class="go-more">Info ›</span></button></li>`
+          : `<li class="go">${txt}</li>`;
+      }
+      const p = byId[s.act];
+      // consecutive activities with no logistics line between them get a walking estimate
+      const walk = prevAct && !goSince && prevAct.id !== p.id
+        ? `<li class="go"><span class="gi" aria-hidden="true">🚶</span><span class="gt">${howFar(prevAct, p)}</span></li>` : '';
+      n++; prevAct = p; goSince = false;
       return `${walk}<li class="step">
-        <span class="num ${p ? '' : 'free'}">${p ? n : '·'}</span>
-        ${p ? `<button class="body" data-place="${p.id}">${inner}</button>` : `<div class="body">${inner}</div>`}
+        <span class="num">${n}</span>
+        <div class="body">
+          <button class="main" data-place="${p.id}">
+            <span class="row1"><span class="t">${esc(s.t)}</span><span class="n">${esc(p.name)}</span></span>
+            <span class="d">${esc(s.do)}</span>
+            <span class="c">${esc(s.cost || p.cost)}</span>
+          </button>
+          <a class="gmap" href="${GMAP(p)}" target="_blank" rel="noopener" aria-label="Open ${esc(p.name)} in Google Maps" title="Open in Google Maps">${PIN_SVG}</a>
+        </div>
       </li>`;
     }).join('');
-    $('#dayView').innerHTML = `
-      <div style="--dc:${DAYC[day]}">
-        <h2 class="daytitle">${esc(d.title)}</h2>
-        <p class="daynote">${esc(d.note)} <b>≈ €${Math.round(dayCost(day))} each.</b></p>
-        <ol class="steps">${items}</ol>
-      </div>`;
+    $('#dayView').innerHTML = `<ol class="steps" style="--dc:${DAYC[day]}">${items}</ol>`;
+
+    // the day at a glance, on the map: one time per activity
+    const acts = d.steps.filter(s => s.act);
+    timesEl.style.setProperty('--dc', DAYC[day]);
+    timesEl.innerHTML = acts.length
+      ? acts.map((s, i) => `<button data-place="${s.act}" title="${esc(byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
+      : `<span class="times-none">Arrival night: no activities</span>`;
   }
   $('#dayView').addEventListener('click', e => {
-    const b = e.target.closest('[data-place]'); if (b) focusPlace(b.dataset.place);
+    const b = e.target.closest('button[data-place]'); if (b) focusPlace(b.dataset.place);
+  });
+  timesEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-place]'); if (b) select(b.dataset.place);
   });
 
   function setDay(k) {
@@ -399,13 +423,9 @@
   function renderBudget() {
     let total = 0;
     const rows = Object.entries(PLAN).map(([k, d]) => {
-      const seen = new Set();
-      const parts = [];
-      d.steps.forEach(s => {
-        if (!s.place || seen.has(s.place)) return;
-        seen.add(s.place);
-        const p = byId[s.place];
-        if (p.costPP) parts.push(`${p.name.split(' — ')[0].split(' (')[0]} €${p.costPP}`);
+      const parts = d.steps.filter(s => stepCost(s)).map(s => {
+        const name = s.label || byId[s.act].name.split(' — ')[0].split(' (')[0];
+        return `${name} €${+stepCost(s).toFixed(2)}`;
       });
       const c = dayCost(k); total += c;
       return `<tr><td><b>${esc(d.label)}</b><div class="sub">${esc(parts.join(' · '))}</div></td><td>€${Math.round(c)}</td></tr>`;
@@ -417,9 +437,9 @@
         <tbody>${rows}</tbody>
         <tfoot><tr><td>Whole trip</td><td>≈ €${Math.round(total)}</td></tr></tfoot>
       </table>
-      <div class="callout"><strong>Where the money goes:</strong> the buffet, the sauna and the karaoke drinks are about half of it. Everything that makes the trip memorable (the spray, the tray shop, the dance video, the letters, the bingo) costs almost nothing.</div>
-      <p class="fine"><b>Cheaper still:</b> swap Kotiharju for the free Sompasauna (−€20), make the karaoke a pre-drinks-at-home night (−€10), and have breakfast at home both days. <b>Treat Emma:</b> the others split her share of the buffet and sauna (≈ €17 each).</p>
-      <p class="fine"><b>Remember:</b> Alko (the only shop for wine) is closed on Sunday. Buy the bubbles by Saturday 18:00.</p>`;
+      <div class="callout"><strong>Where the money goes:</strong> the meals, Activate and the sauna are most of it. The things that make the trip memorable (the spray, the dance video, the tray shop, the letters, the bingo) cost almost nothing.</div>
+      <p class="fine"><b>Cheaper still:</b> swap Kotiharju for the free Sompasauna (−€20) and have breakfast at home both days. <b>Treat Emma:</b> the others split her buffet and sauna (≈ €17 each).</p>
+      <p class="fine"><b>Remember:</b> Alko (the only shop for wine) is closed on Sunday, and you land after it closes on Friday. Buy the bubbles on Saturday morning.</p>`;
   }
 
   // ── tabs ───────────────────────────────────────────────
@@ -427,6 +447,7 @@
   function showTab(name) {
     tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
     document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== `panel-${name}`; });
+    daysEl.hidden = name !== 'plan';
     store.set('emma_tab', name);
   }
   tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });

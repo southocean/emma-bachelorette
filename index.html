@@ -26,7 +26,7 @@
     <button class="theme" id="theme" aria-label="Switch light or dark mode"></button>
   </header>
   <aside class="side">
-
+    <div class="sticky">
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="plan" aria-selected="true">Plan</button>
       <button role="tab" data-tab="moments">Moments</button>
@@ -34,14 +34,12 @@
       <button role="tab" data-tab="budget">Budget</button>
       <button role="tab" data-tab="secret" id="secretTab" hidden>🔓 Traditions</button>
     </nav>
+    <div class="days" id="days"></div>
+    </div>
 
     <section class="panel" id="panel-plan">
-      <div class="days" id="days"></div>
       <div id="dayView"></div>
-      <div class="callout">
-        <strong>The special occasion:</strong> the <a href="https://silakkamarkkinat.fi/en/" target="_blank" rel="noopener">Baltic Herring Market</a>, Helsinki's oldest festival (since 1743), opens in Market Square on <b>Sunday 4 Oct</b>, the day you fly home.
-      </div>
-      <p class="fine">Everything that is <em>not</em> in the plan is still on the map: tap the dots to swap things in. Prices are per person, approximate, and worth re-checking before you book.</p>
+      <p class="fine">Other dots on the map are alternatives. Prices are per person and approximate.</p>
     </section>
 
     <section class="panel" id="panel-moments" hidden>
@@ -62,11 +60,17 @@
     <section class="panel" id="panel-secret" hidden>
       <div id="secret"></div>
     </section>
+    <footer class="foot">
+      <p class="love">Made by Nam with love.</p>
+      <p>© 2026 · For Emma's Helsinki weekend, 2–4 October 2026 · Updated 24 Sep 2026</p>
+      <p>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Prices and opening hours change, so check before you book · <a href="https://github.com/southocean/emma-bachelorette" target="_blank" rel="noopener">Source</a></p>
+    </footer>
   </aside>
 
   <main class="mapwrap">
     <div id="map" aria-label="Map of Helsinki"></div>
     <div class="filters" id="filters"></div>
+    <div class="times" id="times" aria-label="Today's activities by time"></div>
     <div class="search">
       <input id="q" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="results"
         placeholder="Search places & activities" aria-label="Search places and activities" autocomplete="off" spellcheck="false">
