@@ -616,3 +616,5 @@ dialog.modal::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blu
 .modal-tools { display: flex; gap: 8px; align-items: center; }
 #bingoTestLock { font-size: 12.5px; padding: 5px 11px; }
 #bingoTestLock[aria-pressed="true"] { border-color: var(--secret); color: var(--secret); }
+/* the bar (and its bubble) sits above the clock, which hangs just below it */
+.times { z-index: 520; }
