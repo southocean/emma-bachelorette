@@ -11,6 +11,15 @@
 //   energy: 1 (slow) .. 3 (high)
 //   tips:   array of short practical lines
 //   url:    official site, when there is one worth opening
+// Optional card blocks (drawn as visuals instead of text):
+//   journey:   [[icon, label, sub], ...]                       a chain: A → B → C
+//   schedules: [{ day, title, note?, mode, line?, rows: [[dep, arr, tag?, line?, track?]] }]
+//              tag 'ours' highlights the departure we plan to take
+//   hours:     [{ day, open, close, label?, extra?: [{label, from, to}], visit?: [from, to] }]
+//              our visit is read from the plan unless given
+//   steps:     [{ title, items: [[icon, text], ...] }]
+//   prices:    { title?, rows: [[icon, label, price], ...] }
+//   tags:      ['short', 'facts']
 
 window.TRIP = {
   title: 'Helsinki, Emma edition',
@@ -29,177 +38,219 @@ window.CATS = {
 
 window.PLACES = [
   // ───────── In the plan (activities, then the logistics pins) ─────────
+  // Cards are built from the structured fields (journey, schedules, hours, steps,
+  // prices, tags); `what` stays one or two short sentences.
   {
     id: 'bauchladen', name: 'Emma\'s belly-tray shop', venue: 'Narinkkatori, Kamppi', cat: 'make', lat: 60.1692, lng: 24.9328,
-    hook: 'Bauchladen: Emma wears a vendor\'s tray and sells silly things to strangers',
-    what: 'A German bachelorette tradition: the bride wears a vendor\'s tray of tiny things (sweets, lucky charms, silly items) and sells them to strangers to fund the night. Narinkkatori is the big open square outside Kamppi, busy with Saturday shoppers and 2 minutes from Quê Em. Emma is the saleswoman; the rest of you are her marketing team. Everything she earns goes into a jar that pays for the first round at karaoke.',
+    hook: 'Bauchladen: Emma sells silly things from a tray to fund the night',
+    what: 'A German bachelorette tradition: the bride sells tiny things to strangers from a vendor\'s tray. Narinkkatori is the big square outside Kamppi, busy with Saturday shoppers.',
     cost: '≈ €5 stock (shared)', costPP: 5, time: '1 h', energy: 3,
-    tips: [
-      'Build the tray at home after breakfast: a shoebox lid, a ribbon or scarf round her neck, an "Emma\'s Last Sale" sign.',
-      'Stock it from any K-Market or Alepa: Fazer Blue minis, salmiakki (sold as a dare), lollipops, cheap hair ties, lucky pennies.',
-      'Sell things only Emma can do too: "a line of any song, sung by the bride — €2" and "a 30-second portrait of you — €2".',
-      'No shots or any alcohol: selling alcohol without a licence is illegal in Finland. Keep it to sweets and silliness.',
-      'Stay on the open square, not inside the mall, and keep it small and friendly. Finns know polttarit groups and usually play along.',
-      'If there is stock left, the tray comes out again on Vaasankatu before karaoke.',
-    ],
+    prices: { title: 'The tray menu', rows: [
+      ['🍫', 'Fazer Blue mini', '€1'], ['🖤', 'Salmiakki, sold as a dare', '€1'], ['🍭', 'Lollipop', '€0.50'],
+      ['🪙', 'Lucky penny', '€0.50'], ['🎤', 'One line of any song, sung by the bride', '€2'], ['✏️', 'A 30-second portrait by Emma', '€2'],
+    ] },
+    steps: [{ title: 'How it works', items: [
+      ['🧰', 'Build it after breakfast: shoebox lid, a ribbon round her neck, an "Emma\'s Last Sale" sign'],
+      ['🛒', 'Stock it at any K-Market or Alepa, ≈ €5 each'],
+      ['🫙', 'Everything goes in a jar: it pays the first round at karaoke'],
+    ] }],
+    tips: ['No alcohol on the tray: unlicensed sales are illegal in Finland.', 'Sell on the open square, not inside the mall.'],
   },
   {
     id: 'queem', name: 'Quê Em', venue: 'Kansakoulukatu 1, Kamppi', cat: 'eat', lat: 60.1682, lng: 24.9342,
     hook: 'Sat dinner: à la carte · Sun lunch: the €29.90 Vietnamese buffet',
-    what: 'The reason for the trip, visited twice. Saturday dinner is à la carte, a first taste of the kitchen. Sunday lunch is the weekend buffet: bánh mì, phở, summer rolls, noodle and rice dishes, desserts and drinks, all you can eat for €29.90. It comes on Sunday on purpose: nothing physical follows it, just coffee, a monument and the flight. It is 2 minutes from Narinkkatori and next to Kamppi metro.',
+    what: 'The reason for the trip, so we go twice: à la carte on Saturday night, then the buffet on Sunday, when nothing physical comes after it.',
     cost: 'à la carte ≈ €15–25 · buffet €29.90', costPP: 30, time: '1–1.5 h', energy: 1,
+    hours: [
+      { day: 'sat', open: '12:00', close: '23:00', extra: [{ label: 'Buffet', from: '11:00', to: '15:00' }] },
+      { day: 'sun', open: '12:00', close: '22:00', extra: [{ label: 'Buffet', from: '11:00', to: '16:00' }] },
+    ],
+    prices: { rows: [['🍜', 'Buffet (Sat 11–15, Sun 11–16)', '€29.90'], ['🥢', 'À la carte dinner', '≈ €15–25']] },
+    tags: ['bánh mì', 'phở', 'summer rolls', 'noodles & rice', 'desserts', 'drinks'],
     tips: [
-      'Buffet: Sat 11:00–15:00 and Sun 11:00–16:00 only. Evenings are à la carte; there is no dinner buffet.',
-      'Their website and booking page call the buffet "Brunch", so pick that when booking Sunday.',
-      'Opening hours: Sat 12–23, Sun 12–22, last orders an hour before closing. The site lists the buffet from 11:00 but the doors from 12:00, so confirm the time when you book.',
-      'Book both tables: Saturday 20:00 (dinner) and Sunday 13:15 (buffet). Online at tableonline.fi, or 050 468 6661 / info@queem.fi. Kansakoulukatu 1.',
+      'Book both: Sat 20:00 and Sun 13:15. Their booking page calls the buffet "Brunch".',
+      'The site shows the buffet from 11:00 but the doors from 12:00: confirm when you book.',
+      'tableonline.fi · 050 468 6661 · info@queem.fi',
     ],
     url: 'https://queem.fi/en/menu/brunch/',
   },
   {
     id: 'activate', name: 'LED jump Activate Itis', venue: 'Activate, Itis shopping centre, Itäkeskus', cat: 'make', lat: 60.2107, lng: 25.0823,
-    hook: 'One hour of active gaming rooms: jump, climb, dodge and solve as a team of 4',
-    what: 'A physical game centre: you move through rooms of short challenges where the floor, walls and lights are the game, jumping, hiding, climbing and solving puzzles together. One session is 60 minutes, for teams of 2–5, so the four of you play as one team. It is in the Itis shopping centre in Itäkeskus, 15 minutes east by metro.',
+    hook: 'Rooms where the floor, walls and lights are the game',
+    what: 'Game rooms of short challenges: jump on lit tiles, dodge, climb and solve puzzles as a team.',
     cost: '≈ €20–30 (check)', costPP: 25, time: '1 h', energy: 3,
-    tips: [
-      'Open Sat 10–22 (Sun 10/11–20/21, sources differ). Book a slot online so the four of you play together.',
-      'Itis Bulevardi, 2nd floor. Metro to Itäkeskus; the mall is right by the station.',
-      'Sporty shoes and clothes you can move in. Lunch is just before, so keep it light.',
-      'Contact: +358 50 375 6709, itis@activategames.fi.',
-    ],
+    tags: ['60 min', 'one team of 4', 'Itis Bulevardi, 2nd floor', 'sporty clothes'],
+    hours: [{ day: 'sat', open: '10:00', close: '22:00' }],
+    tips: ['Book a slot online so the four of you play together.', 'Lunch is just before: eat light.', '+358 50 375 6709 · itis@activategames.fi'],
     url: 'https://playactivate.fi/en/itis',
   },
   {
     id: 'suomenlinna', name: 'Champagne spray & dance', venue: 'Suomenlinna sea fortress', cat: 'make', lat: 60.1406, lng: 24.9862,
     hook: 'Sea-fortress cliffs + open Baltic: the two videos of the trip',
-    what: 'An 18th-century island fortress with grassy ramparts, tunnels, cannons and cliffs straight onto the open sea. Walk the blue route to the far end (Kustaanmiekka / King\'s Gate area) and film both videos there: the champagne spray on the rocks with nothing but sea behind Emma, and the 20-second dance on the ramparts. Then wander back slowly to the ferry.',
-    cost: 'Free (bottle from Alko)', costPP: 0, time: '1.5 h', energy: 2,
-    tips: [
-      'The spray: phone in slow-mo, low angle, Emma facing the light, shake ~10 s, thumb over the top, pop and aim UP, not at people. Take a second from behind her.',
-      'The dance: Emma picks the song; learn the 20 seconds on the ferry over. Film wide on the ramparts, phone propped on a bag, 0.5× lens.',
-      'Toilets and cafés are near the main quay; there is little at the far end.',
-      'Wear shoes that can handle wet rock.',
+    what: 'An 18th-century island fortress. Both videos happen on the cliffs at the far end, with nothing but sea behind Emma.',
+    cost: 'Free (bottle from Alko)', costPP: 0, time: '1h20', energy: 2,
+    journey: [['⛴️', 'Main quay', 'ferry lands'], ['🚶', 'Blue route', '≈ 20 min'], ['🌊', 'King\'s Gate cliffs', 'film here'], ['🚶', 'Wander back', '≈ 20 min']],
+    steps: [
+      { title: '🍾 The spray', items: [['📱', 'Slow-mo, low angle, Emma facing the light'], ['🤝', 'Shake ~10 s, thumb over the top'], ['⬆️', 'Pop up and away, never at people'], ['🔁', 'Second take from behind her']] },
+      { title: '💃 The dance', items: [['🎵', 'Emma picks the song'], ['⛴️', 'Learn the 20 seconds on the ferry over'], ['🎬', 'Film wide on the ramparts, phone on a bag, 0.5×']] },
     ],
+    tips: ['Toilets and cafés are at the main quay only.', 'Shoes for wet rock.'],
     url: 'https://www.suomenlinna.fi/en/',
   },
   {
     id: 'kotiharju', name: 'Bridal sauna', venue: 'Kotiharju Sauna, Kallio', cat: 'sauna', lat: 60.1868, lng: 24.9537,
-    hook: 'Morsiussauna: the old Finnish bride\'s sauna, in the city\'s last wood-fired public sauna',
-    what: 'The trip\'s traditional Finnish ritual: morsiussauna, the bridal sauna. Before a wedding the bride\'s women took her to the sauna to "wash off" her maiden life. She was whisked with a birch vihta, given marriage advice, sung to, and scrubbed (traditionally with a paste of egg, salt and flour, if you dare). Kotiharju is Helsinki\'s last wood-heated public sauna, open since 1928 in Kallio, and it rents out a private sauna, so you can do it properly: songs, advice, the vihta, no strangers. It is also the day\'s rest before the evening.',
-    cost: '≈ €20 (private sauna) · public €16', costPP: 20, time: '1h45', energy: 1,
-    tips: ['Book the private sauna for ~17:45 (open Tue–Sun 14–20, closed Mondays).', 'Maid of honour is the "head bather": she whisks Emma with the vihta.', 'Each person brings one piece of real marriage advice and one song for Emma.', 'Bring towels and water; people cool off on the pavement outside in towels, which is normal here.'],
+    hook: 'Morsiussauna in Helsinki\'s last wood-heated public sauna (1928)',
+    what: 'Morsiussauna, the Finnish bride\'s sauna: her women took her to the sauna to wash off her maiden life. A private sauna, so we can do it properly.',
+    cost: '≈ €20 (private) · public €16', costPP: 20, time: '1h45', energy: 1,
+    hours: [{ day: 'sat', open: '14:00', close: '20:00' }],
+    steps: [{ title: 'The ritual', items: [
+      ['🌿', 'The maid of honour whisks Emma with the birch vihta'],
+      ['💬', 'One piece of real marriage advice from each of us'],
+      ['🎤', 'One song each for Emma'],
+      ['🥚', 'Optional, legendary: the egg, salt and flour scrub'],
+      ['🧣', 'Cool off outside in towels, like the locals'],
+    ] }],
+    prices: { rows: [['🔒', 'Private sauna', '≈ €20 each'], ['🚪', 'Public sauna', '€16']] },
+    tips: ['Book the private sauna for 17:45. Closed Mondays.', 'Bring towels and water.'],
     url: 'https://www.kotiharjunsauna.fi/en',
   },
   {
     id: 'saigonese', name: 'Lunch at Quán a Lợi', venue: 'The Saigonese Home Kitchen & Coffee, Lapinlahdenkatu 21', cat: 'eat', lat: 60.1674, lng: 24.9265,
     hook: 'Our friend\'s Vietnamese kitchen: vegan phở, curry, steamed buns',
-    what: 'A cosy Vietnamese home kitchen and coffee place run by a friend of Nam\'s, with nearly half the menu vegan: vegan phở, curry, steamed buns and summer rolls, plus Vietnamese coffee. Saturday lunch, 5 minutes from Narinkkatori and next to Kamppi metro for Activate.',
+    what: 'A friend\'s Vietnamese home kitchen, next to Kamppi metro. Nearly half the menu is vegan.',
     cost: '≈ €15–20', costPP: 18, time: '1 h', energy: 1,
-    tips: ['Open Sat 12–21, Sun 12–19. Book for 12:00 when it opens, and let them know you are four.', 'Lapinlahdenkatu 21, Kamppi. Phone 046 598 9104.'],
+    hours: [{ day: 'sat', open: '12:00', close: '21:00' }, { day: 'sun', open: '12:00', close: '19:00' }],
+    tags: ['vegan phở', 'curry', 'steamed buns', 'summer rolls', 'Vietnamese coffee'],
+    tips: ['Book 12:00 for four, when it opens.', '046 598 9104'],
     url: 'https://the-saigonese.com/food-menu/',
   },
   {
     id: 'populus', name: 'Karaoke', venue: 'Populus, Kallio', cat: 'night', lat: 60.1893, lng: 24.9530,
-    hook: 'One of Helsinki\'s oldest karaoke bars — locals, not tourists',
-    what: 'Finland takes karaoke seriously: people pick songs with care, the crowd cheers everyone, and a good performer becomes the bar\'s hero for the night, which is exactly Emma\'s natural habitat. Populus is an old-school Kallio karaoke bar. No entry fee; put your names on the list early on a Saturday.',
-    cost: 'Free entry · drinks ≈ €8–10 each', costPP: 20, time: 'All night', energy: 3,
-    tips: ['Queue a group song AND an Emma solo as soon as you arrive: Saturday lists get long.', 'Learn one Finnish song chorus (e.g. an Irwin Goodman or Kaija Koo classic) and the room will adopt you.', 'If the night keeps going: Wallis on Katajanokka is open until 4:30 with sea views (on the map).'],
+    hook: 'One of Helsinki\'s oldest karaoke bars: locals, not tourists',
+    what: 'Finns take karaoke seriously and cheer everyone on, which is Emma\'s natural habitat.',
+    cost: 'Free entry · drinks ≈ €8–10', costPP: 20, time: 'All night', energy: 3,
+    steps: [{ title: 'Game plan', items: [
+      ['📝', 'Names on the list the moment you arrive: Saturday lists get long'],
+      ['🎤', 'Queue Emma\'s solo and one group song'],
+      ['🇫🇮', 'Learn one Finnish chorus (Irwin Goodman, Kaija Koo) and the room adopts you'],
+    ] }],
+    prices: { rows: [['🚪', 'Entry', 'Free'], ['🍺', 'A drink', '≈ €8–10']] },
+    tips: ['Still going after? Wallis on Katajanokka is open until 4:30 (on the map).'],
   },
   {
     id: 'herring', name: 'Helsinki\'s oldest festival', venue: 'Baltic Herring Market, Market Square', cat: 'eat', lat: 60.1676, lng: 24.9526,
     hook: 'The Baltic Herring Market (since 1743) opens the day you fly home',
-    what: 'The special occasion: the Baltic Herring Market, Helsinki\'s oldest festival (since 1743), opens in Market Square on Sunday 4 Oct, the day you fly home. Fishing boats from the archipelago moor at the quay and sell herring every way possible: fried, pickled in dozens of flavours, on rye bread. Do the herring tasting challenge (see Moments) and browse the archipelago bread and craft stalls. Keep it to tasting: the Quê Em buffet is at lunch.',
+    what: 'The special occasion: the Baltic Herring Market, Helsinki\'s oldest festival (since 1743), opens in Market Square on Sunday 4 Oct, the day you fly home.',
     cost: '≈ €5–10 tasting', costPP: 8, time: '1h15', energy: 1,
-    tips: ['Open Sun 9–19. Go before 12 for the least crowded stalls.', 'Fried herring (paistetut silakat) is the classic, if you want a proper plate after all.', 'Until 10 Oct, ten Helsinki restaurants also have herring specials on the menu.'],
+    hours: [{ day: 'sun', open: '09:00', close: '19:00' }],
+    tags: ['since 1743', 'fishing boats at the quay', 'pickled in dozens of flavours', 'archipelago bread'],
+    tips: ['Taste, don\'t lunch: the Quê Em buffet is next.', 'Before 12 is quietest.'],
     url: 'https://silakkamarkkinat.fi/en/',
   },
   {
     id: 'uspenski', name: 'Cathedral', venue: 'Uspenski Cathedral', cat: 'see', lat: 60.1686, lng: 24.9597,
     hook: 'Red-brick Orthodox cathedral on a rock, 5 min from the market',
-    what: 'The biggest Orthodox church in Western Europe, with golden domes and a view over the harbour from its rocky hill. A quick, free, calm stop after the market.',
+    what: 'The largest Orthodox church in Western Europe, with a harbour view from its hill.',
     cost: 'Free', costPP: 0, time: '20 min', energy: 1,
-    tips: ['Opening hours on Sundays can be limited because of services; the view from the terrace is always open.'],
+    tips: ['Inside can be closed during Sunday services; the view is always open.'],
   },
   {
     id: 'senate', name: 'More cathedral & square', venue: 'Helsinki Cathedral & Senate Square', cat: 'see', lat: 60.1697, lng: 24.9522,
     hook: 'The white cathedral on top of the most famous stairs in Finland',
-    what: 'The white, green-domed Lutheran cathedral above Senate Square, Helsinki\'s postcard view. Climb the big staircase, look inside (free, calm, five minutes), and take the group photo from the bottom of the steps.',
+    what: 'Helsinki\'s postcard view. Climb the stairs, look inside, group photo from the bottom.',
     cost: 'Free', costPP: 0, time: '30 min', energy: 1,
-    tips: ['Sunday morning services mean visitors usually get in from around midday; the steps and square are always open.'],
+    tips: ['Visitors usually get in from about midday on Sundays, after the service.'],
   },
   {
     id: 'regatta', name: 'Letter to future Emma', venue: 'Café Regatta', cat: 'make', lat: 60.1790, lng: 24.9115,
-    hook: 'Tiny red seaside cabin, huge cinnamon buns, candles & blankets outside',
-    what: 'The trip\'s slow ending. A tiny red wooden café by the water, famous for cinnamon buns and outdoor fire pits. Each of you writes a short letter to Emma, sealed, to be opened on her first wedding anniversary. Coffee and a bun, blankets, the sea: this is where the weekend lands softly.',
+    hook: 'Tiny red seaside cabin, huge cinnamon buns, fire pits outside',
+    what: 'The slow ending: coffee, a cinnamon bun and the sea.',
     cost: '≈ €5–8', costPP: 6, time: '1 h', energy: 1,
-    tips: ['Bring 4 envelopes and a pen (or buy postcards at the market).', 'It is popular. If the queue is long, go to the Sibelius Monument first and come back.', 'Some sausage-grilling fire pits outside are free to use.'],
+    steps: [{ title: 'The letters', items: [['✉️', 'Bring 4 envelopes and a pen'], ['✍️', 'One letter each, sealed'], ['📅', 'Opened on her first wedding anniversary']] }],
+    tips: ['Long queue? Do the Sibelius Monument first and come back.'],
   },
   {
     id: 'sibelius', name: 'The last group photo', venue: 'Sibelius Monument', cat: 'see', lat: 60.1821, lng: 24.9131,
-    hook: '600 steel pipes in a park',
-    what: 'The monument to Jean Sibelius, a wave of 600 welded steel pipes in Sibelius Park, 5 minutes from Café Regatta. Last group photo of the trip.',
-    cost: 'Free', costPP: 0, time: '15 min', energy: 1,
-    tips: ['Tram or bus back to the centre takes ~20 min.'],
+    hook: '600 steel pipes in a park, 5 min from Café Regatta',
+    what: 'A wave of 600 welded steel pipes honouring Jean Sibelius. The last group photo of the trip.',
+    cost: 'Free', costPP: 0, time: '15 min', energy: 1, tips: [],
   },
   {
     id: 'fazer', name: 'Last coffee', venue: 'Fazer Café Kluuvikatu', cat: 'eat', lat: 60.1686, lng: 24.9477,
     hook: 'Fazer\'s flagship café, 10 minutes from the station',
-    what: 'Fazer blue chocolate is the Finnish gift. The flagship café is a pretty, central last stop, 10 minutes\' walk from the station, and the shop sells the chocolate you will bring home.',
+    what: 'A last coffee in the Finnish chocolate brand\'s flagship café, a 10-minute walk from the station.',
     cost: '≈ €5–12', costPP: 8, time: '45 min', energy: 1,
     tips: ['Check Sunday opening hours before you go.'],
   },
 
   // logistics pins: on the map, but only as lines between activities in the plan
   {
-    id: 'ferry', name: 'Market Square — the Suomenlinna ferry', cat: 'practical', lat: 60.1670, lng: 24.9536,
-    hook: 'Where the Suomenlinna ferry leaves: the harbour square',
-    what: 'Kauppatori, Helsinki\'s harbour square: market stalls, the Havis Amanda fountain, the Old Market Hall and the SkyWheel are all here, and on Sunday it is where the Herring Market happens. The Suomenlinna ferry is regular public transport and leaves from the east corner of the square, so the HSL day ticket covers it. The 15-minute crossing is a sightseeing cruise in itself: stand outside for the view back at the city.',
-    cost: 'Included in the HSL day ticket', costPP: 0, time: '15 min each way', energy: 1,
-    tips: ['Ferries run every 20–40 min. Check the times in the HSL app, especially the one back (~17:00).', 'Toilets: the Old Market Hall, 2 minutes away.'],
+    id: 'ferry', name: 'Suomenlinna ferry', venue: 'Market Square (Kauppatori), east corner', cat: 'practical', lat: 60.1670, lng: 24.9536,
+    hook: 'HSL ferry 19 · every 20 min · 15 min crossing',
+    what: 'Regular HSL public transport from the harbour square, covered by the day ticket.',
+    cost: 'In the HSL day ticket', costPP: 0, time: '15 min each way', energy: 1,
+    journey: [['🧺', 'Market Square', 'east corner'], ['⛴️', 'Ferry 19', '15 min'], ['🏰', 'Suomenlinna', 'main quay']],
+    schedules: [
+      { day: 'sat', title: 'Sat 3 Oct · Market Square → Suomenlinna', line: '19', mode: 'ferry', rows: [
+        ['15:00', '15:15'], ['15:20', '15:35', 'ours'], ['15:40', '15:55'] ] },
+      { day: 'sat', title: 'Sat 3 Oct · Suomenlinna → Market Square', line: '19', mode: 'ferry', rows: [
+        ['16:40', '16:55'], ['17:00', '17:15', 'ours'], ['17:20', '17:35'], ['17:40', '17:55', 'latest for the sauna'] ] },
+    ],
+    tags: ['Old Market Hall (toilets)', 'Havis Amanda fountain', 'SkyWheel', 'Sunday: the Herring Market'],
+    tips: ['Timetable: HSL, for Sat 3 Oct 2026. Check the HSL app on the day.'],
     url: 'https://www.hsl.fi/en',
   },
   {
-    id: 'alko', name: 'Alko Arkadia (the bubbles run)', cat: 'practical', lat: 60.1693, lng: 24.9345,
-    hook: 'Buy the champagne-spray bottle here, the ONLY kind of shop that sells it',
-    what: 'Finnish supermarkets only sell drinks up to 8%, so real sparkling wine comes from Alko, the state shop. A cava or crémant for spraying costs €10–15. Alko is open Mon–Fri 9–21 and Sat 9–18, and CLOSED ON SUNDAY. You land after it closes on Friday, so go on Saturday morning: this one is across the street from Narinkkatori.',
-    cost: '≈ €3–4 (one bottle ÷ 4)', costPP: 4, time: '15 min', energy: 1,
-    tips: ['Buy two: one to spray, one to actually drink.', 'Pick one with a proper cork, not a screw cap: the pop is the shot.'],
-    url: 'https://www.alko.fi/en',
-  },
-  {
-    id: 'airport', name: 'Airport train (HEL ↔ Central Station)', cat: 'practical', lat: 60.3172, lng: 24.9633,
-    venue: 'Helsinki Airport station, under the terminal',
-    hook: 'I or P commuter train, ~30 min, every ~10 min · ABC ticket €4.50',
-    what: 'Both the I and the P commuter trains link the airport and Central Station, one each way round the ring line, so take whichever comes first. The ride is about 30 minutes. Trains run roughly every 10 minutes in the daytime and less often late in the evening, so on Friday night expect a short wait. The airport station is underground, between the terminals: follow the "Trains" signs from arrivals. Flights: ARN 20:40 → HEL 22:35 on Friday; HEL 21:15 → ARN on Sunday (the hour back is the time difference).',
-    cost: '€4.50 ABC single (app) · €4.80 contactless', costPP: 4.5, time: '30 min', energy: 1,
-    tips: [
-      'Friday: an ABC single ticket, €4.50 in the HSL app or €4.80 if you just tap a bank card on the reader. Valid 90 minutes.',
-      'Sunday: the ABC day ticket you buy at lunch already covers the airport, so no extra ticket.',
-      'Buy before you board: the trains have no conductors and ticket inspectors do check.',
-      'Sunday timing: train from Central Station around 19:00, at the airport by ~19:30–19:45 for the 21:15 flight.',
-      'Download the HSL app before you fly and set it up at home.',
+    id: 'airport', name: 'Airport train', venue: 'Helsinki Airport station ↔ Central Station', cat: 'practical', lat: 60.3172, lng: 24.9633,
+    hook: 'I or P train · ~30 min · every 10–15 min · ABC ticket €4.50',
+    what: 'The I and P trains both run between the airport and Central Station, one each way round the loop. Take whichever comes first.',
+    cost: '€4.50 (app) · €4.80 (tap a card)', costPP: 4.5, time: '28–34 min', energy: 1,
+    journey: [['✈️', 'HEL', 'underground: follow "Trains"'], ['🚆', 'I or P train', '28–34 min'], ['🚉', 'Central Station', 'city centre']],
+    schedules: [
+      { day: 'fri', title: 'Fri 2 Oct · HEL → Central Station', note: 'You land 22:35 (flight from ARN 20:40). Gate to platform ≈ 15–20 min.', mode: 'train', rows: [
+        ['22:42', '23:11', 'too soon', 'P', 'track 1'], ['22:57', '23:26', 'ours', 'P', 'track 1'], ['23:04', '23:38', '', 'I', 'track 2'],
+        ['23:12', '23:41', 'if we\'re slow', 'P', 'track 1'], ['23:27', '23:56', '', 'P', 'track 1'] ] },
+      { day: 'sun', title: 'Sun 4 Oct · Central Station → HEL', note: 'Flight to ARN 21:15. Be at the airport by ≈ 19:45.', mode: 'train', rows: [
+        ['18:56', '19:23', '', 'I', 'track 2'], ['19:06', '19:33', 'ours', 'I', 'track 4'], ['19:08', '19:41', '', 'P', 'track 19'],
+        ['19:16', '19:43', 'backup', 'I', 'track 3'], ['19:26', '19:53', 'latest', 'I', 'track 4'] ] },
     ],
+    prices: { rows: [['📱', 'ABC single, HSL app', '€4.50'], ['💳', 'ABC single, tap a bank card', '€4.80'], ['🎫', 'Sunday: the ABC day ticket covers it', '€0']] },
+    tips: ['Buy before boarding: no conductors, and inspectors check.', 'Tickets are valid 90 min. Get the HSL app before you fly.', 'Timetable: Fintraffic open data for 2 & 4 Oct 2026. Check the HSL app on the day.'],
     url: 'https://www.hsl.fi/en/travelling/visitors/airport-train',
   },
   {
-    id: 'station', name: 'Central Station bag lockers', cat: 'practical', lat: 60.1710, lng: 24.9414,
-    venue: 'Helsinki Central railway station, west wing',
-    hook: 'Card-paid lockers in the west wing · from €3.90 / 3 h · open 6:00–24:00',
-    what: 'Leave the bags here after checking out on Sunday, so the day is hands-free, and pick them up for the airport train. The lockers are at the north end of the station\'s west wing, near the Eliel Square entrance; the west wing is open 6:00–midnight. Sizes S and XL fit cabin bags; you book 3, 6, 12, 24 or 72 hours, and pay by card at the locker. Sunday 10:00–19:00 is 9 hours, so book 12 hours.',
-    cost: 'from €3.90 (S) / €4.90 (XL) per 3 h · ≈ €5–8 each for the day', costPP: 0, time: '10 min', energy: 1,
-    tips: [
-      'Price depends on size, hours and season: 12 hours costs more than the 3-hour minimum. Share an XL between two carry-ons and split it.',
-      'Overstaying the booking adds an hourly fee, so book 12 hours, not 6.',
-      'Card only. Keep the receipt or code: it opens the locker.',
-      'Lockers full? Luggage-storage apps (Radical Storage, LuggageHero, Nannybag) have spots next to the station.',
-    ],
+    id: 'station', name: 'Bag lockers', venue: 'Central Station, west wing (north end)', cat: 'practical', lat: 60.1710, lng: 24.9414,
+    hook: 'Card-paid lockers · from €3.90 / 3 h · west wing open 6:00–24:00',
+    what: 'Leave the bags at 10:00 so Sunday is hands-free; collect them for the airport train.',
+    cost: 'from €3.90 / 3 h · ≈ €5–8 each', costPP: 0, time: '10 min', energy: 1,
+    hours: [{ day: 'sun', open: '06:00', close: '24:00', label: 'West wing', visit: ['10:00', '18:45'] }],
+    steps: [{ title: 'How to', items: [
+      ['🧭', 'North end of the west wing, by the Eliel Square entrance'],
+      ['📦', 'S fits one cabin bag, XL fits two'],
+      ['⏱️', 'Book 12 h: 10:00 → 19:00 is 9 h, and overtime costs extra'],
+      ['💳', 'Pay by card, keep the code: it opens the locker'],
+    ] }],
+    prices: { rows: [['📦', 'S, 3 h (73 × 38 × 94 cm)', 'from €3.90'], ['🧳', 'XL, 3 h (63 × 96 × 94 cm)', 'from €4.90'], ['⏱️', '12 h: more, so share an XL', '≈ €5–8 each']] },
+    tips: ['Full? LuggageHero, Radical Storage and Nannybag have spots next to the station.'],
     url: 'https://www.vr.fi/en/railway-stations-and-routes/helsinki',
   },
   {
-    id: 'itakeskus', name: 'Itäkeskus metro', cat: 'practical', lat: 60.2102, lng: 25.0796,
-    hook: 'Metro stop for Itis and Activate, ~15 min from Kamppi',
-    what: 'Any eastbound metro from Kamppi goes to Itäkeskus in about 15 minutes; the Itis shopping centre is right by the station.',
-    cost: 'Included in the HSL day ticket', costPP: 0, time: '15 min', energy: 1, tips: [],
+    id: 'alko', name: 'Alko Arkadia', venue: 'Salomonkatu 1, across from Narinkkatori', cat: 'practical', lat: 60.1693, lng: 24.9345,
+    hook: 'The only kind of shop that sells the champagne-spray bottle',
+    what: 'Supermarkets only sell drinks up to 8%, so sparkling wine means Alko, the state shop.',
+    cost: '≈ €3–4 (one bottle ÷ 4)', costPP: 4, time: '15 min', energy: 1,
+    hours: [{ day: 'sat', open: '09:00', close: '18:00' }],
+    prices: { rows: [['🍾', 'Cava or crémant, with a real cork', '€10–15'], ['👯', 'Two bottles: one to spray, one to drink', '≈ €6–8 each']] },
+    tips: ['Closed on Sunday, and shut before you land on Friday: Saturday morning it is.'],
+    url: 'https://www.alko.fi/en',
+  },
+  {
+    id: 'itakeskus', name: 'Metro to Itäkeskus', venue: 'Itäkeskus metro station', cat: 'practical', lat: 60.2102, lng: 25.0796,
+    hook: 'Kamppi → Itäkeskus · ~15 min · every few minutes',
+    what: 'Any eastbound metro goes; the Itis shopping centre is right by the station.',
+    cost: 'In the HSL day ticket', costPP: 0, time: '15 min', energy: 1,
+    journey: [['Ⓜ️', 'Kamppi', 'eastbound'], ['🚇', 'Metro M1 or M2', '≈ 15 min'], ['Ⓜ️', 'Itäkeskus', ''], ['🛍️', 'Itis', '2 min walk']],
+    tips: [],
   },
 
   // ───────── Alternatives ─────────
@@ -446,7 +497,7 @@ window.MOMENTS = [
   { name: 'Morsiussauna', cost: '≈ €20', where: 'kotiharju',
     how: 'The real Finnish bridal sauna ritual: vihta whisking, one piece of marriage advice and one song from each of you.' },
   { name: 'Polttari bingo', cost: 'Free', where: null,
-    how: 'The bingo tab has a card of small dares. First full line picks Emma\'s next karaoke song.' },
+    how: 'Everyone gets their own secret card of dares and moments. First full line picks Emma\'s next karaoke song.' },
   { name: 'Emma\'s karaoke setlist', cost: 'Free', where: 'populus',
     how: 'Before the trip, everyone secretly picks one song Emma MUST sing. Reveal them at the bar one by one.' },
   { name: 'Herring tasting challenge', cost: '≈ €5 shared', where: 'herring',
@@ -459,6 +510,9 @@ window.MOMENTS = [
     how: 'Emma sings one song for coins on Esplanadi; the hat buys a round. Only if the mood is right.' },
 ];
 
+// Bingo. Everyone types a secret number; it seeds their own card of 8 dares + 8 moments.
+//   BINGO: shared moments, marked when they happen while you are there (✨)
+//   DARES: personal dares, marked only if YOU did it: photo, video or witness (🎯)
 window.BINGO = [
   'A Finn teaches Emma a word', 'Someone says "Kippis!" with us', 'Photo with a stranger in a hat',
   'Emma gets a karaoke round of applause', 'Find a Moomin', 'Someone jumps in the sea',
@@ -467,4 +521,29 @@ window.BINGO = [
   'Someone cries (happy)', 'Order in Finnish', 'Get a free sample at the market', 'Everyone in one photo, no selfie stick',
   'Emma sells out her tray', 'A stranger buys a sung line', 'Champagne hits someone', 'Spot the SkyWheel from the ferry',
   'A Finn joins our karaoke song', 'Someone says "Moi!" to us first', 'Emma gets whisked with the vihta', 'Someone gets lost in Activate',
+];
+
+window.DARES = [
+  "Get a Finn to teach you a word, and use it later that day",
+  "Buy one sung line from Emma's tray",
+  "Sell something from Emma's tray yourself",
+  "Get a stranger to give Emma one piece of marriage advice",
+  "Get a stranger to write a wish in Emma's wedding card",
+  "Order something entirely in Finnish",
+  "Invent a team chant and get all four to shout it before Activate",
+  "Be the one who pops the champagne",
+  "Do a cartwheel (or a very brave attempt) on the Suomenlinna ramparts",
+  "Keep the Finnish sauna silence for 5 full minutes",
+  "Cool off on the pavement outside Kotiharju in your towel, like the locals",
+  "Sing a solo at karaoke",
+  "Get a stranger to sing a line with you at karaoke",
+  "Say \"Kippis!\" with a table of strangers",
+  "Say \"Moi!\" to five strangers and get five back",
+  "Eat salmiakki without pulling a face, on camera",
+  "Eat the weirdest pickled herring in one bite",
+  "Talk a stall into a free taste at the Herring Market",
+  "Find a Moomin and take a selfie with it",
+  "Teach a stranger one word in Vietnamese or Swedish",
+  "Get a stranger to take a photo of you and Emma",
+  "Find someone else in Helsinki who is getting married this year"
 ];

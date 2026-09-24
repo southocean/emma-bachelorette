@@ -164,13 +164,15 @@
         <div><dt>Energy</dt><dd class="energy" title="${p.energy} of 3">${energy}</dd></div>
       </dl>
       ${from ? `<div class="dist">From <b>${esc(from.name)}</b>: ${howFar(from, p)}</div>` : ''}
-      <p>${esc(p.what)}</p>
-      ${p.tips.length ? `<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+      <p class="what">${esc(p.what)}</p>
+      ${cardBlocks(p)}
+      ${p.tips.length ? `<ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <div class="actions">
         <a class="primary" href="${GMAP(p)}" target="_blank" rel="noopener">Open in Maps</a>
         <button data-origin>${origin === id ? '✓ Measuring from here' : 'Measure distances from here'}</button>
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
+    dEl.style.setProperty('--dc', DAYC[day]);
     dEl.hidden = false;
     dEl.scrollTop = 0;
     reveal(p, fly);
@@ -178,6 +180,60 @@
     $('.x', dEl).onclick = dismissCard;
     $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
   }
+  // ── card blocks: the structured parts of a place, drawn instead of written ──
+  const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const LINE = { I: '#8c4799', P: '#8c4799', 19: '#00b9e4' };
+  const DAYNAME = { fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+  // when we are at this place on a given day: from its step to the next step in the plan
+  function visitOn(id, d) {
+    const steps = (P[d] || { steps: [] }).steps;
+    const i = steps.findIndex(s => s.act === id || (s.go && s.place === id));
+    if (i < 0 || !/^\d/.test(steps[i].t)) return null;
+    const next = steps.slice(i + 1).find(s => /^\d/.test(s.t));
+    const from = toMin(steps[i].t), to = next ? toMin(next.t) : from + 60;
+    return [from, to > from ? to : from + 60];
+  }
+  function cardBlocks(p) {
+    let h = '';
+    if (p.journey) h += `<div class="journey">${p.journey.map(([ic, l, sub], i) =>
+      `${i ? '<span class="j-arrow" aria-hidden="true">→</span>' : ''}<div class="j-node"><span class="j-ic">${ic}</span><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`).join('')}</div>`;
+    if (p.schedules) {
+      // today's timetables first
+      const list = p.schedules.slice().sort((x, y) => (y.day === day) - (x.day === day));
+      h += list.map(sc => `<section class="sched ${sc.day === day ? 'today' : 'other'}">
+        <h4>${esc(sc.title)}</h4>${sc.note ? `<p class="sched-note">${esc(sc.note)}</p>` : ''}
+        <ol>${sc.rows.map(([dep, arr, tag, line, track]) => {
+          const ln = line || sc.line || '', mins = toMin(arr) - toMin(dep) + (toMin(arr) < toMin(dep) ? 1440 : 0);
+          return `<li class="${tag === 'ours' ? 'ours' : ''}">
+            <span class="s-time"><b>${dep}</b><span class="s-dash">→</span>${arr}</span>
+            ${ln ? `<span class="s-line" style="background:${LINE[ln] || 'var(--ink-2)'}">${sc.mode === 'ferry' ? '⛴' : ''}${esc(ln)}</span>` : ''}
+            <span class="s-min">${mins} min</span>
+            ${track ? `<span class="s-track">${esc(track)}</span>` : ''}
+            ${tag ? `<span class="s-tag">${tag === 'ours' ? '★ ours' : esc(tag)}</span>` : ''}
+          </li>`; }).join('')}</ol>
+      </section>`).join('');
+    }
+    if (p.hours) {
+      const all = p.hours.flatMap(r => [r.open, r.close, ...(r.extra || []).flatMap(e => [e.from, e.to])]).map(toMin);
+      const lo = Math.max(0, Math.floor(Math.min(...all) / 60 - 1) * 60), hi = Math.min(1440, Math.ceil(Math.max(...all) / 60 + .5) * 60);
+      const pct = m => ((Math.min(hi, Math.max(lo, m)) - lo) / (hi - lo) * 100).toFixed(2) + '%';
+      const seg = (f, t, cls, label) => `<span class="${cls}" style="left:${pct(f)};width:calc(${pct(t)} - ${pct(f)})" title="${esc(label)}"></span>`;
+      const ticks = []; for (let m = lo; m <= hi; m += 180) ticks.push(`<span style="left:${pct(m)}">${String(m / 60 % 24).padStart(2, '0')}</span>`);
+      h += `<section class="hours"><h4>Opening hours <span class="legend"><i class="lg-open"></i>open${p.hours.some(r => r.extra) ? '<i class="lg-extra"></i>' + esc(p.hours.find(r => r.extra).extra[0].label.toLowerCase()) : ''}<i class="lg-us"></i>us</span></h4>
+        ${p.hours.map(r => {
+          const v = r.visit ? r.visit.map(toMin) : visitOn(p.id, r.day);
+          return `<div class="h-row ${r.day === day ? 'today' : ''}" style="--dc:${DAYC[r.day]}"><span class="h-day">${DAYNAME[r.day]}</span>
+            <div class="h-bar">${seg(toMin(r.open), toMin(r.close), 'h-open', (r.label || 'Open') + ' ' + r.open + '–' + r.close)}${(r.extra || []).map(e => seg(toMin(e.from), toMin(e.to), 'h-extra', e.label + ' ' + e.from + '–' + e.to)).join('')}${v ? seg(v[0], v[1], 'h-us', 'Us') : ''}</div>
+            <span class="h-txt">${r.open}–${r.close}${(r.extra || []).map(e => `<small>${esc(e.label)} ${e.from}–${e.to}</small>`).join('')}</span></div>`;
+        }).join('')}
+        <div class="h-row h-tickrow"><span></span><div class="h-ticks">${ticks.join('')}</div><span></span></div></section>`;
+    }
+    if (p.steps) h += p.steps.map(g => `<section class="stepsb"><h4>${esc(g.title)}</h4><ol>${g.items.map(([ic, t]) => `<li><span class="b-ic">${ic}</span>${esc(t)}</li>`).join('')}</ol></section>`).join('');
+    if (p.prices) h += `<section class="pricesb">${p.prices.title ? `<h4>${esc(p.prices.title)}</h4>` : ''}<ul>${p.prices.rows.map(([ic, l, v]) => `<li><span class="b-ic">${ic}</span><span class="p-l">${esc(l)}</span><b>${esc(v)}</b></li>`).join('')}</ul></section>`;
+    if (p.tags) h += `<div class="tagsb">${p.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>`;
+    return h;
+  }
+
   // Keep the chosen place visible beside the card instead of underneath it.
   function reveal(p, fly) {
     const z = fly ? Math.max(map.getZoom(), 15) : map.getZoom();
@@ -498,52 +554,62 @@
   });
 
   // ── bingo ──────────────────────────────────────────────
-  // A handful of fixed, numbered cards instead of a random shuffle: Emma picks the
-  // number, everyone opens the same card on their own phone. Seeded, so card 3 is the
-  // same 16 squares in the same places on every device.
-  const CARDS = 5;
+  // Everyone types a secret number; it seeds their own card: 8 dares + 8 moments,
+  // shuffled. Same number = same card on any device, and nobody can see yours
+  // without it. Once you have marked a square, changing the number asks first.
+  const hashSeed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   function seeded(n) {
-    let t = n * 2654435761 >>> 0;
+    let t = n >>> 0;
     return () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
   }
-  function cardCells(n) {
-    const rnd = seeded(n), a = BINGO.slice();
-    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-    return a.slice(0, 16);
+  function shuffle(arr, rnd) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function cardFor(seed) {
+    const rnd = seeded(hashSeed('emma:' + seed));
+    const cells = shuffle(DARES, rnd).slice(0, 8).map(t => ({ t, k: 'dare' }))
+      .concat(shuffle(BINGO, rnd).slice(0, 8).map(t => ({ t, k: 'moment' })));
+    return shuffle(cells, rnd);
   }
-  let bingo = store.get('emma_bingo2', null);
-  if (!bingo || !(bingo.card >= 1 && bingo.card <= CARDS) || typeof bingo.hits !== 'object') bingo = { card: 1, hits: {} };
+  let bingo = store.get('emma_bingo3', null);
+  if (!bingo || typeof bingo.seed !== 'string' || !Array.isArray(bingo.hits)) bingo = { seed: '', hits: [] };
   const lines = [];
-  for (let i = 0; i < 4; i++) {
-    lines.push([0, 1, 2, 3].map(j => i * 4 + j), [0, 1, 2, 3].map(j => j * 4 + i));
-  }
+  for (let i = 0; i < 4; i++) lines.push([0, 1, 2, 3].map(j => i * 4 + j), [0, 1, 2, 3].map(j => j * 4 + i));
   lines.push([0, 5, 10, 15], [3, 6, 9, 12]);
-  $('#bingoPick').innerHTML = Array.from({ length: CARDS }, (_, i) =>
-    `<button data-card="${i + 1}" aria-pressed="${bingo.card === i + 1}" aria-label="Card ${i + 1}">${i + 1}</button>`).join('');
   function renderBingo(celebrate) {
-    const cells = cardCells(bingo.card);
-    const hit = new Set(bingo.hits[bingo.card] || []);
-    const won = lines.filter(l => l.every(i => hit.has(i)));
-    const winCells = new Set(won.flat());
+    const playing = !!bingo.seed;
+    $('#bingoGate').hidden = playing; $('#bingoPlay').hidden = !playing;
+    if (!playing) return 0;
+    const cells = cardFor(bingo.seed), hit = new Set(bingo.hits);
+    const won = lines.filter(l => l.every(i => hit.has(i))), winCells = new Set(won.flat());
     $('#bingo').innerHTML = cells.map((c, i) =>
-      `<button data-i="${i}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}">${esc(c)}</button>`).join('');
-    $('#bingoPick').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.card === bingo.card));
+      `<button data-i="${i}" data-k="${c.k}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}" title="${c.k === 'dare' ? 'Dare: only if you did it' : 'Moment: if it happened'}"><span class="bk" aria-hidden="true">${c.k === 'dare' ? '🎯' : '✨'}</span>${esc(c.t)}</button>`).join('');
+    $('#bingoWon').hidden = !won.length;
     if (celebrate != null && won.length > celebrate) confetti();
     return won.length;
   }
   let wins = renderBingo(null);
-  $('#bingoPick').addEventListener('click', e => {
-    const b = e.target.closest('[data-card]'); if (!b) return;
-    bingo.card = +b.dataset.card; store.set('emma_bingo2', bingo); wins = renderBingo(null);
+  $('#bingoForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('#bingoSeed').value.trim();
+    if (!v) { $('#bingoSeed').focus(); return; }
+    bingo = { seed: v, hits: [] }; store.set('emma_bingo3', bingo);
+    $('#bingoSeed').value = ''; wins = renderBingo(null);
   });
   $('#bingo').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    const i = +b.dataset.i, h = bingo.hits[bingo.card] || [];
-    bingo.hits[bingo.card] = h.includes(i) ? h.filter(x => x !== i) : h.concat(i);
-    store.set('emma_bingo2', bingo);
+    const i = +b.dataset.i;
+    bingo.hits = bingo.hits.includes(i) ? bingo.hits.filter(x => x !== i) : bingo.hits.concat(i);
+    store.set('emma_bingo3', bingo);
     wins = renderBingo(wins);
   });
-  $('#bingoReset').onclick = () => { bingo.hits[bingo.card] = []; store.set('emma_bingo2', bingo); wins = renderBingo(null); };
+  $('#bingoChange').onclick = () => {
+    if (bingo.hits.length && !confirm('A new number gives you a different card and clears your marks. Change it?')) return;
+    bingo = { seed: '', hits: [] }; store.set('emma_bingo3', bingo); wins = renderBingo(null);
+    setTimeout(() => $('#bingoSeed').focus(), 50);
+  };
+  $('#bingoReset').onclick = () => {
+    if (bingo.hits.length && !confirm('Clear all your marks?')) return;
+    bingo.hits = []; store.set('emma_bingo3', bingo); wins = renderBingo(null);
+  };
 
   // ── budget ─────────────────────────────────────────────
   function renderBudget() {
@@ -708,11 +774,9 @@
           <p class="how"><b>In Helsinki:</b> ${esc(t.helsinki)}</p>
         </div>`).join('')}
       <button class="ghost" id="lock">Lock again</button>`;
-    renderDares(data.dares);
     $('#lock').onclick = () => {
       try { sessionStorage.removeItem('emma_admin'); } catch {}
       $('#secretTab').hidden = true; $('#secret').innerHTML = '';
-      $('#daresTab').hidden = true; $('#dares').innerHTML = '';
       setSecret(false); showTab('plan');
     };
     $('#secretTab').hidden = false;
@@ -726,54 +790,6 @@
     try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
     setSecret(wasOn);
     if (!quiet) { showTab('secret'); confetti(); }
-  }
-
-  // Nam's review of the proposed bingo dares. Decisions live in this browser only;
-  // "Copy my decisions" puts them on the clipboard to send back.
-  function renderDares(d) {
-    if (!d || !d.items) return;
-    const saved = store.get('emma_dares', {});
-    const state = id => saved[id] || { v: '', edit: '' };
-    function paint() {
-      const n = { keep: 0, drop: 0, open: 0 };
-      d.items.forEach(x => { const v = state(x.id).v; n[v === 'keep' ? 'keep' : v === 'drop' ? 'drop' : 'open']++; });
-      $('#dares').innerHTML = `
-        <p class="lede">${esc(d.intro)}</p>
-        <p class="dare-count"><b>${n.keep}</b> kept · <b>${n.drop}</b> dropped · <b>${n.open}</b> to decide</p>
-        ${d.items.map((x, i) => { const s = state(x.id); return `
-          <div class="dare ${s.v}" data-id="${x.id}">
-            <div class="dare-top"><span class="dare-n">${i + 1}</span><p>${esc(x.text)}</p></div>
-            <div class="meta">${esc(x.when)} · proof: ${esc(x.proof)}</div>
-            <div class="dare-row">
-              <button data-v="keep" aria-pressed="${s.v === 'keep'}">✓ Keep</button>
-              <button data-v="drop" aria-pressed="${s.v === 'drop'}">✕ Drop</button>
-              <input data-edit placeholder="Reword it (optional)" value="${esc(s.edit)}">
-            </div>
-          </div>`; }).join('')}
-        <div class="dare-foot"><button class="ghost" id="daresCopy">Copy my decisions</button><span id="daresCopied" class="fine"></span></div>`;
-    }
-    paint();
-    $('#dares').onclick = e => {
-      const b = e.target.closest('[data-v]');
-      if (b) {
-        const id = b.closest('.dare').dataset.id, s = state(id);
-        saved[id] = { ...s, v: s.v === b.dataset.v ? '' : b.dataset.v };
-        store.set('emma_dares', saved); paint(); return;
-      }
-      if (e.target.id === 'daresCopy') {
-        const line = (x, i) => { const s = state(x.id); return `${i + 1}. [${s.v ? s.v.toUpperCase() : '??'}] ${x.text}${s.edit ? ` → "${s.edit}"` : ''}`; };
-        const text = 'Bingo dares, my decisions:\n' + d.items.map(line).join('\n');
-        const done = ok => { $('#daresCopied').textContent = ok ? ' Copied. Paste it to Claude.' : ' Copy failed: select the list and copy by hand.'; };
-        (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
-      }
-    };
-    $('#dares').oninput = e => {
-      if (!e.target.matches('[data-edit]')) return;
-      const id = e.target.closest('.dare').dataset.id;
-      saved[id] = { ...state(id), edit: e.target.value.trim() };
-      store.set('emma_dares', saved);
-    };
-    $('#daresTab').hidden = false;
   }
 
   // ── light / dark ───────────────────────────────────────
@@ -801,5 +817,5 @@
   setDay('sat');
   if (isAdmin()) unlock(true);
   const t = store.get('emma_tab', 'plan');
-  showTab((t === 'secret' || t === 'dares') && !isAdmin() ? 'plan' : t);
+  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' ? 'plan' : t);
 })();
