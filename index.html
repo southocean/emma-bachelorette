@@ -47,29 +47,6 @@
       <div id="moments"></div>
     </section>
 
-    <section class="panel" id="panel-bingo" hidden>
-      <div id="bingoGate">
-        <p class="lede">Your own secret bingo card. Pick a number only you know: the same number gives the same card on any phone, and nobody sees yours without it.</p>
-        <form id="bingoForm" class="bingo-form">
-          <input id="bingoSeed" inputmode="numeric" autocomplete="off" placeholder="Your secret number" aria-label="Your secret number">
-          <button>Get my card</button>
-        </form>
-      </div>
-      <div id="bingoPlay" hidden>
-        <ul class="bingo-rules">
-          <li><span>🎯</span><b>Dare</b> mark it only if <em>you</em> did it: photo, video or witness</li>
-          <li><span>✨</span><b>Moment</b> mark it if it happened while you were there</li>
-          <li><span>🏆</span><b>Bingo</b> first full line (row, column or diagonal) picks Emma's next karaoke song</li>
-        </ul>
-        <p class="bingo-won" id="bingoWon" hidden>🎉 BINGO! Shout it, then go pick Emma's song.</p>
-        <div class="bingo" id="bingo"></div>
-        <div class="bingo-actions">
-          <button class="ghost" id="bingoReset">Clear my marks</button>
-          <button class="ghost" id="bingoChange">Change my number</button>
-        </div>
-      </div>
-    </section>
-
     <section class="panel" id="panel-budget" hidden>
       <div id="budget"></div>
     </section>
@@ -107,6 +84,37 @@
     <article class="detail" id="detail" hidden></article>
   </main>
 </div>
+
+<dialog id="bingoModal" class="modal" aria-labelledby="bingoTitle">
+  <header class="modal-head">
+    <h2 id="bingoTitle">Polttari bingo</h2>
+    <button class="x" id="bingoClose" aria-label="Close bingo">✕</button>
+  </header>
+  <div id="bingoGate">
+    <p class="lede">Your own secret bingo card. Pick a number only you know: the same number gives the same card on any phone, and nobody sees yours without it.</p>
+    <p class="bingo-prize">🎁 The first full line wins a <b>secret prize, chosen by Emma</b>. She has all weekend to think about it, and the harder you play, the better it gets.</p>
+    <p class="bingo-deadline" id="bingoDeadline"></p>
+    <form id="bingoForm" class="bingo-form">
+      <input id="bingoSeed" inputmode="numeric" autocomplete="off" placeholder="Your secret number" aria-label="Your secret number">
+      <button>Get my card</button>
+    </form>
+    <p class="bingo-out" id="bingoOut" hidden>🔒 Cards were handed out until Sat 3 Oct, 09:00. No card, no game this time. Cheer the others on!</p>
+  </div>
+  <div id="bingoPlay" hidden>
+    <ul class="bingo-rules">
+      <li><span>🎯</span><b>Dare</b><span>only if <em>you</em> did it (photo, video or witness)</span></li>
+      <li><span>✨</span><b>Moment</b><span>if it happened while you were there</span></li>
+      <li><span>🎁</span><b>Bingo</b><span>first full line of 5 wins a secret prize, chosen by Emma</span></li>
+    </ul>
+    <p class="bingo-won" id="bingoWon" hidden>🎉 BINGO! Shout it, and go claim your secret prize from Emma.</p>
+    <div class="bingo" id="bingo"></div>
+    <div class="bingo-actions">
+      <button class="ghost" id="bingoReset">Clear my marks</button>
+      <button class="ghost" id="bingoChange">Change my number</button>
+      <span class="bingo-lock" id="bingoLock" hidden>🔒 Cards locked at Sat 09:00</span>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="gate">
   <form method="dialog" id="gateForm">

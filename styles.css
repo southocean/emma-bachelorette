@@ -561,3 +561,32 @@ dialog#gate::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur
 .tl-tip.can-open { cursor: pointer; }
 .tl-tip.can-open:hover { border-color: var(--dc); }
 .tl-tip .tt-go { margin-left: 4px; color: var(--dc); font-weight: 700; font-size: 16px; line-height: 1; }
+
+/* ── bingo popup ── */
+dialog.modal {
+  border: 1px solid var(--line); border-radius: 18px; background: var(--bg); color: var(--ink);
+  width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0 18px 18px; box-shadow: var(--shadow);
+  overflow-y: auto;
+}
+dialog.modal::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur(3px); }
+.modal-head { position: sticky; top: 0; z-index: 1; background: var(--bg); display: flex; align-items: center; justify-content: space-between; padding: 14px 0 10px; }
+.modal-head h2 { font-size: 22px; }
+.modal-head .x { border: 0; background: var(--surface-2); width: 32px; height: 32px; border-radius: 50%; }
+.bingo-deadline { font-size: 13px; background: color-mix(in srgb, var(--gold) 14%, var(--surface)); border-radius: 10px; padding: 7px 10px; margin: 0 0 10px; }
+.bingo-out { font-size: 14px; background: var(--surface-2); border-radius: 12px; padding: 12px; }
+.bingo { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.bingo button { font-size: 11px; line-height: 1.2; padding: 15px 4px 4px; }
+.bingo-lock { font-size: 12.5px; color: var(--ink-2); align-self: center; }
+@media (max-width: 520px) {
+  dialog.modal { padding: 0 10px 12px; }
+  .bingo { gap: 3px; }
+  .bingo button { aspect-ratio: auto; min-height: 76px; font-size: 9.5px; padding: 14px 2px 3px; border-radius: 8px; }
+  .bingo .bk { font-size: 9px; top: 2px; left: 3px; }
+}
+
+/* ── the day bar's box grows with its blocks, keeping the padding ── */
+.times { transition: height .16s ease, opacity .24s ease, transform .24s ease; }
+.tl-track { transition: height .16s ease; }
+.times:hover, .times.expanded { height: 48px; }
+.times:hover .tl-track, .times.expanded .tl-track { height: 27px; }
+.bingo-prize { font-size: 14px; border: 1px solid var(--gold); border-radius: 12px; padding: 9px 12px; margin: 0 0 10px; background: color-mix(in srgb, var(--gold) 10%, var(--surface)); }

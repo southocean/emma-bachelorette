@@ -676,9 +676,13 @@
   });
 
   // ── bingo ──────────────────────────────────────────────
-  // Everyone types a secret number; it seeds their own card: 8 dares + 8 moments,
-  // shuffled. Same number = same card on any device, and nobody can see yours
-  // without it. Once you have marked a square, changing the number asks first.
+  // A popup over the plan. Everyone types a secret number; it seeds their own 5×5 card:
+  // 8 dares + 17 moments, shuffled. Same number = same card on any device, and nobody
+  // sees yours without it. Cards can only be made until Sat 3 Oct 09:00 (Helsinki);
+  // after that the number is locked, and without a card you are out of the game.
+  const CARD_DEADLINE = Date.UTC(2026, 9, 3, 6, 0); // 09:00 EEST
+  const SIZE = 5, DARES_PER_CARD = 8;
+  const locked = () => Date.now() >= CARD_DEADLINE;
   const hashSeed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   function seeded(n) {
     let t = n >>> 0;
@@ -686,19 +690,27 @@
   }
   function shuffle(arr, rnd) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function cardFor(seed) {
-    const rnd = seeded(hashSeed('emma:' + seed));
-    const cells = shuffle(DARES, rnd).slice(0, 8).map(t => ({ t, k: 'dare' }))
-      .concat(shuffle(BINGO, rnd).slice(0, 8).map(t => ({ t, k: 'moment' })));
+    const rnd = seeded(hashSeed('emma5:' + seed));
+    const cells = shuffle(DARES, rnd).slice(0, DARES_PER_CARD).map(t => ({ t, k: 'dare' }))
+      .concat(shuffle(BINGO, rnd).slice(0, SIZE * SIZE - DARES_PER_CARD).map(t => ({ t, k: 'moment' })));
     return shuffle(cells, rnd);
   }
-  let bingo = store.get('emma_bingo3', null);
+  let bingo = store.get('emma_bingo5', null);
   if (!bingo || typeof bingo.seed !== 'string' || !Array.isArray(bingo.hits)) bingo = { seed: '', hits: [] };
   const lines = [];
-  for (let i = 0; i < 4; i++) lines.push([0, 1, 2, 3].map(j => i * 4 + j), [0, 1, 2, 3].map(j => j * 4 + i));
-  lines.push([0, 5, 10, 15], [3, 6, 9, 12]);
+  const idx = [...Array(SIZE).keys()];
+  idx.forEach(i => lines.push(idx.map(j => i * SIZE + j), idx.map(j => j * SIZE + i)));
+  lines.push(idx.map(i => i * SIZE + i), idx.map(i => i * SIZE + SIZE - 1 - i));
+  const fmtDeadline = () => {
+    const ms = CARD_DEADLINE - Date.now(), d = Math.floor(ms / 864e5), hr = Math.floor(ms % 864e5 / 36e5);
+    return `⏳ Cards lock <b>Sat 3 Oct, 09:00</b>: ${d ? d + ' days ' : ''}${hr} h to go.`;
+  };
   function renderBingo(celebrate) {
-    const playing = !!bingo.seed;
+    const playing = !!bingo.seed, isLocked = locked();
     $('#bingoGate').hidden = playing; $('#bingoPlay').hidden = !playing;
+    $('#bingoForm').hidden = isLocked; $('#bingoOut').hidden = !isLocked;
+    $('#bingoDeadline').innerHTML = isLocked ? '' : fmtDeadline();
+    $('#bingoChange').hidden = isLocked; $('#bingoLock').hidden = !isLocked;
     if (!playing) return 0;
     const cells = cardFor(bingo.seed), hit = new Set(bingo.hits);
     const won = lines.filter(l => l.every(i => hit.has(i))), winCells = new Set(won.flat());
@@ -708,29 +720,35 @@
     if (celebrate != null && won.length > celebrate) confetti();
     return won.length;
   }
-  let wins = renderBingo(null);
+  let wins = 0;
+  const modal = $('#bingoModal');
+  function openBingo() { wins = renderBingo(null); modal.showModal(); }
+  $('#bingoClose').onclick = () => modal.close();
+  modal.addEventListener('click', e => { if (e.target === modal) modal.close(); }); // the backdrop closes it
   $('#bingoForm').addEventListener('submit', e => {
     e.preventDefault();
+    if (locked()) { renderBingo(null); return; }
     const v = $('#bingoSeed').value.trim();
     if (!v) { $('#bingoSeed').focus(); return; }
-    bingo = { seed: v, hits: [] }; store.set('emma_bingo3', bingo);
+    bingo = { seed: v, hits: [] }; store.set('emma_bingo5', bingo);
     $('#bingoSeed').value = ''; wins = renderBingo(null);
   });
   $('#bingo').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const i = +b.dataset.i;
     bingo.hits = bingo.hits.includes(i) ? bingo.hits.filter(x => x !== i) : bingo.hits.concat(i);
-    store.set('emma_bingo3', bingo);
+    store.set('emma_bingo5', bingo);
     wins = renderBingo(wins);
   });
   $('#bingoChange').onclick = () => {
+    if (locked()) return;
     if (bingo.hits.length && !confirm('A new number gives you a different card and clears your marks. Change it?')) return;
-    bingo = { seed: '', hits: [] }; store.set('emma_bingo3', bingo); wins = renderBingo(null);
+    bingo = { seed: '', hits: [] }; store.set('emma_bingo5', bingo); wins = renderBingo(null);
     setTimeout(() => $('#bingoSeed').focus(), 50);
   };
   $('#bingoReset').onclick = () => {
     if (bingo.hits.length && !confirm('Clear all your marks?')) return;
-    bingo.hits = []; store.set('emma_bingo3', bingo); wins = renderBingo(null);
+    bingo.hits = []; store.set('emma_bingo5', bingo); wins = renderBingo(null);
   };
 
   // ── budget ─────────────────────────────────────────────
@@ -764,7 +782,10 @@
     daysEl.hidden = name !== 'plan';
     store.set('emma_tab', name);
   }
-  tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
+  tabs.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.tab === 'bingo') openBingo(); else showTab(b.dataset.tab);
+  });
 
   // ── confetti ───────────────────────────────────────────
   function confetti() {
@@ -939,5 +960,5 @@
   setDay('sat');
   if (isAdmin()) unlock(true);
   const t = store.get('emma_tab', 'plan');
-  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' ? 'plan' : t);
+  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' || t === 'bingo' ? 'plan' : t);
 })();

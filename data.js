@@ -585,7 +585,7 @@ window.MOMENTS = [
   { name: 'Morsiussauna', cost: '≈ €20', where: 'kotiharju',
     how: 'The real Finnish bridal sauna ritual: vihta whisking, one piece of marriage advice and one song from each of you.' },
   { name: 'Polttari bingo', cost: 'Free', where: null,
-    how: 'Everyone gets their own secret card of dares and moments. First full line picks Emma\'s next karaoke song.' },
+    how: 'Everyone gets their own secret 5×5 card of dares and moments. First full line wins a secret prize, chosen by Emma.' },
   { name: 'Emma\'s karaoke setlist', cost: 'Free', where: 'populus',
     how: 'Before the trip, everyone secretly picks one song Emma MUST sing. Reveal them at the bar one by one.' },
   { name: 'Herring tasting challenge', cost: '≈ €5 shared', where: 'herring',
@@ -598,7 +598,7 @@ window.MOMENTS = [
     how: 'Emma sings one song for coins on Esplanadi; the hat buys a round. Only if the mood is right.' },
 ];
 
-// Bingo. Everyone types a secret number; it seeds their own card of 8 dares + 8 moments.
+// Bingo. Everyone types a secret number; it seeds their own 5×5 card of 8 dares + 17 moments.
 //   BINGO: shared moments, marked when they happen while you are there (✨)
 //   DARES: personal dares, marked only if YOU did it: photo, video or witness (🎯)
 window.BINGO = [
