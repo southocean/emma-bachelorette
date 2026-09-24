@@ -17,6 +17,7 @@
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(h));
   }
+  const walkMin = (a, b) => Math.round(metres(a, b) * 1.3 / 80);
   function howFar(a, b) {
     if (a.id === b.id) return 'same place';
     const isl = x => x.id === 'suomenlinna';
@@ -441,14 +442,90 @@
     }).join('');
     $('#dayView').innerHTML = `<ol class="steps" style="--dc:${DAYC[day]}">${items}</ol>`;
 
-    // the day at a glance, on the map: one time per activity
-    const acts = d.steps.filter(s => s.act && byId[s.act]);
-    timesEl.style.setProperty('--dc', DAYC[day]);
-    timesEl.innerHTML = acts.length
-      ? acts.map((s, i) => `<button data-place="${s.act}" style="--i:${i}" title="${esc(s.name || byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
-      : `<span class="times-none">Arrival night: no activities</span>`;
+    renderDayBar(d);
     markActive(sel);
   }
+
+  // ── the day bar: the whole day on one line ──
+  // Activities are numbered blocks, transport is hatched, walking between two activities
+  // is carved off the end of the first one, and breakfast-type notes are pale. Hover (or
+  // tap once on a phone) for start, end and length; click an activity to open it.
+  const fmtDur = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`;
+  const fmtT = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  let barSegs = [];
+  function daySegments(d) {
+    const timed = d.steps.filter(s => /^\d{1,2}:\d{2}$/.test(s.t) && (!s.act || byId[s.act]));
+    const segs = [];
+    let n = 0;
+    timed.forEach((s, i) => {
+      const start = toMin(s.t), next = timed[i + 1];
+      let end = s.end ? toMin(s.end) : next ? toMin(next.t) : start + 60;
+      if (end <= start) end = start + 30;
+      if (s.act) {
+        n++;
+        const p = byId[s.act], name = s.name || p.name;
+        // straight on to another activity: the walk is part of the gap, so show it
+        let walk = 0;
+        if (next && next.act && byId[next.act] && !s.end) walk = Math.min(walkMin(p, byId[next.act]), Math.floor((end - start) / 2));
+        segs.push({ k: 'act', n, place: s.act, label: name, start, end: end - walk });
+        if (walk >= 3) segs.push({ k: 'walk', icon: '🚶', label: `Walk to ${byId[next.act].name}`, start: end - walk, end });
+        else if (walk) segs[segs.length - 1].end = end;
+      } else if (s.go) segs.push({ k: 'go', icon: s.icon || '→', label: s.go, start, end, place: s.open ? s.place : null });
+      else segs.push({ k: 'note', icon: '🏠', label: s.note, start, end });
+    });
+    return segs;
+  }
+  function renderDayBar(d) {
+    barSegs = daySegments(d);
+    timesEl.style.setProperty('--dc', DAYC[day]);
+    if (!barSegs.length) { timesEl.innerHTML = ''; return; }
+    const lo = Math.floor(barSegs[0].start / 60) * 60, hi = Math.ceil(barSegs[barSegs.length - 1].end / 60) * 60;
+    const pct = m => ((m - lo) / (hi - lo) * 100).toFixed(3) + '%';
+    const hours = (hi - lo) / 60, step = hours > 10 ? 2 : 1;
+    const ticks = [];
+    for (let m = lo; m <= hi; m += 60) ticks.push(`<span class="tl-tick ${(m - lo) / 60 % step ? 'minor' : ''}" style="left:${pct(m)}"><i>${(m - lo) / 60 % step ? '' : fmtT(m).slice(0, 2)}</i></span>`);
+    timesEl.innerHTML = `
+      <div class="tl-scale">${ticks.join('')}</div>
+      <div class="tl-track">${barSegs.map((sg, i) => {
+        const style = `left:${pct(sg.start)};width:calc(${pct(sg.end)} - ${pct(sg.start)});--i:${i}`;
+        const inner = sg.k === 'act' ? `<b>${sg.n}</b>` : `<em>${sg.icon}</em>`;
+        return `<button class="tl-seg tl-${sg.k}${sg.place ? ' can-open' : ''}" data-seg="${i}" style="${style}" aria-label="${esc(sg.label)}, ${fmtT(sg.start)} to ${fmtT(sg.end)}">${inner}</button>`;
+      }).join('')}</div>
+      <div class="tl-tip" hidden></div>`;
+  }
+  let tipFor = -1;
+  function showTip(i) {
+    const sg = barSegs[i], tip = timesEl.querySelector('.tl-tip'), seg = timesEl.querySelector(`[data-seg="${i}"]`);
+    if (!sg || !tip || !seg) return;
+    tipFor = i;
+    const kind = sg.k === 'act' ? `<span class="tt-n">${sg.n}</span>` : `<span class="tt-ic">${sg.icon}</span>`;
+    tip.innerHTML = `${kind}<span class="tt-body"><b>${esc(sg.label)}</b><small>${fmtT(sg.start)}–${fmtT(sg.end)} · ${fmtDur(sg.end - sg.start)}${sg.k === 'go' || sg.k === 'walk' ? ' on the way' : ''}</small></span>`;
+    tip.hidden = false;
+    // keep the tip inside the bar
+    const box = timesEl.getBoundingClientRect(), r = seg.getBoundingClientRect();
+    const w = tip.offsetWidth, x = Math.max(0, Math.min(box.width - w, r.left - box.left + r.width / 2 - w / 2));
+    tip.style.left = x + 'px';
+    timesEl.querySelectorAll('.tl-seg').forEach(b => b.classList.toggle('hot', +b.dataset.seg === i));
+  }
+  function hideTip() {
+    tipFor = -1;
+    const tip = timesEl.querySelector('.tl-tip'); if (tip) tip.hidden = true;
+    timesEl.querySelectorAll('.tl-seg.hot').forEach(b => b.classList.remove('hot'));
+  }
+  timesEl.addEventListener('pointerover', e => {
+    const b = e.target.closest('.tl-seg'); if (b && e.pointerType !== 'touch') showTip(+b.dataset.seg);
+  });
+  timesEl.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') hideTip(); });
+  let lastPointer = 'mouse';
+  timesEl.addEventListener('pointerdown', e => { lastPointer = e.pointerType; });
+  timesEl.addEventListener('click', e => {
+    const b = e.target.closest('.tl-seg'); if (!b) return;
+    const i = +b.dataset.seg, sg = barSegs[i];
+    // on a phone the first tap explains, the second opens
+    if (lastPointer === 'touch' && tipFor !== i) { showTip(i); return; }
+    if (sg.place) { hideTip(); select(sg.place); }
+    else showTip(i);
+  });
 
   // The open card's activity lights up in the plan list (scrolled into view on wide
   // screens), and the time strip on the map hands over to the clock, which spins to
@@ -471,7 +548,7 @@
   // speed. Picking another activity races on to the new time. It never takes the long
   // way round: more than 12 hours ahead means it rewinds instead.
   const clock = (() => {
-    const el = $('#clock'), digits = $('#clockTime'), secs = $('#clockSec');
+    const el = $('#clock'), digits = $('#clockTime');
     const hands = { h: $('#handH'), m: $('#handM'), s: $('#handS') };
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     let shown = false, raf = 0, hideTimer = 0;
@@ -482,9 +559,8 @@
     const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     function paint(min) {
       const m = ((min % 1440) + 1440) % 1440;
-      const hh = Math.floor(m / 60), mm = Math.floor(m % 60), ss = Math.floor((m * 60) % 60);
+      const hh = Math.floor(m / 60), mm = Math.floor(m % 60);
       digits.textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-      secs.textContent = ':' + String(ss).padStart(2, '0');
       hands.h.style.transform = `rotate(${(m / 60) * 30}deg)`;
       hands.m.style.transform = `rotate(${(m % 60) * 6}deg)`;
       hands.s.style.transform = `rotate(${((m * 60) % 60) * 6}deg)`;
@@ -512,7 +588,7 @@
           shown = true;
           base = nowMin(); baseAt = performance.now(); anim = null;
           paint(base);
-          timesEl.classList.add('away');
+          timesEl.classList.add('away'); hideTip();
           el.hidden = false;
           requestAnimationFrame(() => el.classList.add('in'));
           cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
@@ -532,9 +608,6 @@
 
   $('#dayView').addEventListener('click', e => {
     const b = e.target.closest('button[data-place]'); if (b) focusPlace(b.dataset.place);
-  });
-  timesEl.addEventListener('click', e => {
-    const b = e.target.closest('[data-place]'); if (b) select(b.dataset.place);
   });
 
   function setDay(k) {
