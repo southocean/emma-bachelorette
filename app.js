@@ -174,6 +174,7 @@
     dEl.hidden = false;
     dEl.scrollTop = 0;
     reveal(p, fly);
+    markActive(id);
     $('.x', dEl).onclick = dismissCard;
     $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
   }
@@ -198,6 +199,7 @@
     dEl.hidden = true;
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = null;
+    markActive(null);
   }
   // ✕ (or Escape) on a card that came from the search brings the result list back
   function dismissCard() {
@@ -389,6 +391,26 @@
     timesEl.innerHTML = acts.length
       ? acts.map((s, i) => `<button data-place="${s.act}" title="${esc(s.name || byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
       : `<span class="times-none">Arrival night: no activities</span>`;
+    markActive(sel);
+  }
+
+  // The open card's activity lights up in the time strip and in the plan list, and both
+  // scroll just enough to show it. The page itself is left alone on phones, where the
+  // list sits under the map and jumping to it would hide the card.
+  function markActive(id) {
+    timesEl.querySelectorAll('[data-place]').forEach(b => b.classList.toggle('sel', b.dataset.place === id));
+    $('#dayView').querySelectorAll('li').forEach(li => {
+      const hit = !!id && !!li.querySelector(`[data-place="${id}"]`);
+      li.classList.toggle('sel', hit);
+    });
+    if (!id) return;
+    const chip = timesEl.querySelector('.sel');
+    if (chip) {
+      const l = chip.offsetLeft, r = l + chip.offsetWidth; // the strip is the chips' offsetParent
+      if (l < timesEl.scrollLeft || r > timesEl.scrollLeft + timesEl.clientWidth) timesEl.scrollTo({ left: l - 12, behavior: 'smooth' });
+    }
+    const row = $('#dayView li.sel');
+    if (row && !isPhone()) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
   $('#dayView').addEventListener('click', e => {
     const b = e.target.closest('button[data-place]'); if (b) focusPlace(b.dataset.place);
