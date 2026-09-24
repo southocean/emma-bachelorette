@@ -834,3 +834,28 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 /* flute layers: glass fill underneath, then the bubbly, then the outline on top of everything */
 .logo-ic .gf { fill: rgba(255, 255, 255, .75); }
 .logo-ic .g { fill: none; }
+
+/* ── phones: swiping between cards ── */
+.detail.peek { display: none; }
+@media (max-width: 820px) {
+  .detail {
+    transform: translate(var(--sheet-x, 0px), calc(var(--sheet-y, 0px) + var(--sheet-dy, 0px))) rotate(var(--sheet-r, 0deg));
+    transform-origin: 50% 115%;
+  }
+  .detail.flying { transition: transform .23s cubic-bezier(.4, 0, .9, .6); }
+  /* the next card, waiting underneath: slightly smaller and dimmer, growing as you swipe */
+  .detail.peek {
+    display: block; z-index: 1099; pointer-events: none; overflow: hidden;
+    transform: translateY(var(--sheet-y, 0px)) scale(var(--peek-s, .93)); transform-origin: 50% 0;
+    opacity: var(--peek-o, .55); transition: transform .23s ease, opacity .23s ease;
+  }
+  .detail.peek[hidden] { display: none; }
+  .detail.peek.dragging { transition: none; }
+  .detail.peek .clock, .detail.peek .x { display: none; }
+}
+@media (max-width: 820px) {
+  /* the card underneath is solid (no map showing through), just a touch shaded until it arrives */
+  .detail.peek { opacity: 1; filter: brightness(calc(.9 + var(--peek-o, .55) * .1)); transition: transform .23s ease, filter .23s ease; }
+  /* admin tabs stay on desktop */
+  .tabs #secretTab { display: none !important; }
+}

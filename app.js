@@ -146,6 +146,24 @@
     const m = markers[id];
     if (m) { if (!m._map) m.addTo(map); m.getElement()?.classList.add('sel'); }
 
+    dEl.innerHTML = cardHTML(id);
+    dEl.style.setProperty('--dc', DAYC[day]);
+    if (isPhone()) {
+      clockEl.classList.remove('big'); dEl.appendChild(clockEl); // re-rendering the card removed it
+      dEl.insertAdjacentHTML('afterbegin', sheetChrome(id));
+      const wasOpen = !dEl.hidden;
+      dEl.hidden = false;
+      if (!wasOpen || !sheetState) setSheet('mid', !wasOpen);
+    }
+    dEl.hidden = false;
+    dEl.scrollTop = 0;
+    reveal(p, fly);
+    markActive(id);
+    $('.x', dEl).onclick = dismissCard;
+    if ($('[data-origin]', dEl)) $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
+  }
+  function cardHTML(id) {
+    const p = byId[id];
     const hits = planIndex[id] || [];
     const gos = goIndex[id] || [];
     const kick = hits.length
@@ -155,7 +173,7 @@
         : `<span style="color:${CATS[p.cat].color}">${esc(CATS[p.cat].label)} · alternative</span>`;
     const energy = '●'.repeat(p.energy) + '○'.repeat(3 - p.energy);
     const from = origin && origin !== id ? byId[origin] : null;
-    dEl.innerHTML = `
+    return `
       <button class="x" aria-label="Close">✕</button>
       <div class="kick">${kick}</div>
       <h2>${esc(p.name)}</h2>
@@ -175,20 +193,6 @@
         ${p.virtual ? '' : `<button data-origin>${origin === id ? '✓ Measuring from here' : 'Measure distances from here'}</button>`}
         ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Website ↗</a>` : ''}
       </div>`;
-    dEl.style.setProperty('--dc', DAYC[day]);
-    if (isPhone()) {
-      clockEl.classList.remove('big'); dEl.appendChild(clockEl); // re-rendering the card removed it
-      dEl.insertAdjacentHTML('afterbegin', sheetChrome(id));
-      const wasOpen = !dEl.hidden;
-      dEl.hidden = false;
-      if (!wasOpen || !sheetState) setSheet('mid', !wasOpen);
-    }
-    dEl.hidden = false;
-    dEl.scrollTop = 0;
-    reveal(p, fly);
-    markActive(id);
-    $('.x', dEl).onclick = dismissCard;
-    if ($('[data-origin]', dEl)) $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
   }
   // ── card blocks: the structured parts of a place, drawn instead of written ──
   const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
@@ -281,6 +285,7 @@
   function closeDetail() {
     dEl.hidden = true;
     sheetState = null; dEl.classList.remove('full', 'mid');
+    if (typeof peekEl !== 'undefined') { peekEl.hidden = true; peekFor = null; }
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = null;
     markActive(null);
@@ -322,19 +327,48 @@
     const hint = !swipeHinted() && neighbour(id, 1) ? '<span class="sh-hint">Swipe left for the next activity</span>' : '';
     return `<div class="sh-chrome" aria-hidden="true"><span class="sh-grab"></span>${pos}${hint}</div>`;
   }
+  const peekEl = document.createElement('article');
+  peekEl.className = 'detail peek'; peekEl.hidden = true; peekEl.setAttribute('aria-hidden', 'true');
+  dEl.after(peekEl);
+  let peekFor = null;
+  function showPeek(dir) {
+    const next = neighbour(sel, dir);
+    if (!next) { peekEl.hidden = true; peekFor = null; return null; }
+    if (peekFor !== next) {
+      peekEl.innerHTML = sheetChrome(next) + cardHTML(next);
+      peekFor = next;
+    }
+    peekEl.style.setProperty('--dc', DAYC[day]);
+    peekEl.style.setProperty('--sheet-h', dEl.style.getPropertyValue('--sheet-h'));
+    peekEl.style.setProperty('--sheet-y', dEl.style.getPropertyValue('--sheet-y'));
+    peekEl.classList.toggle('full', sheetState === 'full');
+    peekEl.hidden = false; peekEl.scrollTop = 0;
+    return next;
+  }
+  const setSheetX = (x, y = 0) => {
+    dEl.style.setProperty('--sheet-x', x + 'px');
+    dEl.style.setProperty('--sheet-dy', y + 'px');
+    dEl.style.setProperty('--sheet-r', (x * .045).toFixed(2) + 'deg'); // the tilt of a flicked card
+    const p = Math.min(1, Math.abs(x) / (innerWidth * .55));
+    peekEl.style.setProperty('--peek-s', (.93 + .07 * p).toFixed(3));
+    peekEl.style.setProperty('--peek-o', (.55 + .45 * p).toFixed(3));
+  };
   function swipeTo(dir) {
     const next = neighbour(sel, dir);
     if (!next) { setSheetX(0); return; }
     store.set('emma_swipehint', true);
-    const out = dir > 0 ? -innerWidth : innerWidth;
-    dEl.classList.remove('dragging'); setSheetX(out);
+    dEl.classList.remove('dragging'); peekEl.classList.remove('dragging');
+    dEl.classList.add('flying');
+    setSheetX((dir > 0 ? -1 : 1) * innerWidth * 1.15, 70);         // out along the diagonal
+    peekEl.style.setProperty('--peek-s', 1); peekEl.style.setProperty('--peek-o', 1);
     setTimeout(() => {
-      dEl.classList.add('dragging'); setSheetX(-out); void dEl.offsetHeight;
+      dEl.classList.add('dragging'); setSheetX(0);                  // the top card is now the one underneath
       select(next);
-      dEl.classList.remove('dragging'); setSheetX(0);
-    }, 170);
+      void dEl.offsetHeight;
+      dEl.classList.remove('dragging', 'flying');
+      peekEl.hidden = true; peekFor = null;
+    }, 230);
   }
-  const setSheetX = x => dEl.style.setProperty('--sheet-x', x + 'px');
   let drag = null;
   dEl.addEventListener('touchstart', e => {
     if (!isPhone() || dEl.hidden || e.touches.length > 1) return;
@@ -347,9 +381,18 @@
     const t = e.touches[0], dx = t.clientX - drag.x0, dy = t.clientY - drag.y0;
     if (!drag.axis) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      // a thumb swipes on a diagonal: anything flatter than ~55° counts as sideways
+      drag.axis = Math.abs(dx) > Math.abs(dy) * .7 ? 'x' : 'y';
     }
-    if (drag.axis === 'x') { e.preventDefault(); dEl.classList.add('dragging'); setSheetX(dx); return; }
+    if (drag.axis === 'x') {
+      e.preventDefault();
+      const dir = dx < 0 ? 1 : -1;
+      if (drag.dir !== dir) { drag.dir = dir; drag.has = !!showPeek(dir); }
+      dEl.classList.add('dragging'); peekEl.classList.add('dragging');
+      const x = drag.has ? dx : dx * .3;                           // no neighbour: it resists
+      setSheetX(x, Math.max(-40, Math.min(60, dy * .5)));
+      return;
+    }
     // vertical: in the full sheet, content scrolls; the sheet only moves down from the very top
     if (sheetState === 'full' && (drag.scrolled || dy < 0 || dEl.scrollTop > 0)) { drag.axis = 'scroll'; return; }
     e.preventDefault();
@@ -364,7 +407,10 @@
     dEl.classList.remove('dragging');
     if (d.axis === 'x') {
       const vx = dx / Math.max(1, performance.now() - d.t0);
-      if (dx < -70 || vx < -.5) swipeTo(1); else if (dx > 70 || vx > .5) swipeTo(-1); else setSheetX(0);
+      peekEl.classList.remove('dragging');
+      if ((dx < -70 || vx < -.5) && neighbour(sel, 1)) swipeTo(1);
+      else if ((dx > 70 || vx > .5) && neighbour(sel, -1)) swipeTo(-1);
+      else { setSheetX(0); setTimeout(() => { if (!dEl.classList.contains('dragging')) { peekEl.hidden = true; peekFor = null; } }, 320); }
       return;
     }
     if (d.axis !== 'y') return;
@@ -1006,7 +1052,8 @@
   let taps = 0, tapTimer;
   const logo = $('#logo');
   logo.addEventListener('click', e => {
-    if (isAdmin()) { showTab('secret'); return; }
+    playLockup(700); // the logo replays the title's gag
+    if (isAdmin()) { if (!isPhone()) showTab('secret'); return; }
     taps++;
     clearTimeout(tapTimer); tapTimer = setTimeout(() => { taps = 0; }, 2500);
     if (taps >= 4) {
@@ -1095,7 +1142,7 @@
     let wasOn = false;
     try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
     setSecret(wasOn);
-    if (!quiet) { showTab('secret'); confetti(); }
+    if (!quiet) { if (!isPhone()) showTab('secret'); confetti(); } // phones: no Traditions screen
   }
 
   // Light theme only (Nam: no dark mode). The dark tokens in styles.css stay inert,
@@ -1122,9 +1169,12 @@
   // right at a constant speed, hit "'s bachelorette" and crush it against "Emma"
   // (it narrows from its left edge and fades), and "Emma" takes the blow: its letters
   // squeeze together, spring back past normal, and settle.
-  function playLockup() {
+  let lockupRun = 0;
+  function playLockup(hold = 2000) {
     const lk = $('#lockup'), emma = $('.lk-emma', lk), old = $('.lk-old', lk), nw = $('.lk-new', lk);
-    const done = () => { lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
+    const run = ++lockupRun; // a replay cancels whatever run is still going
+    lk.classList.remove('done'); [emma, old, nw].forEach(x => x.removeAttribute('style'));
+    const done = () => { if (run !== lockupRun) return; lk.classList.add('done'); [emma, old, nw].forEach(x => x.removeAttribute('style')); };
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return done();
     const W = old.getBoundingClientRect().width;
     const FROM = 120, V0 = .36, APPROACH = FROM / V0, CRUSH = 360, RECOIL = 460;
@@ -1133,6 +1183,7 @@
     let t0 = 0;
     const easeOut = x => 1 - Math.pow(1 - x, 3);
     function frame(now) {
+      if (run !== lockupRun) return;
       if (!t0) t0 = now;
       const t = now - t0;
       if (t < APPROACH) {                                   // approach: constant speed
@@ -1152,7 +1203,7 @@
       } else return done();
       requestAnimationFrame(frame);
     }
-    setTimeout(() => requestAnimationFrame(frame), 2000); // let "Emma's bachelorette" be read first
+    setTimeout(() => requestAnimationFrame(frame), hold); // let "Emma's bachelorette" be read first
   }
 
   // ── boot ───────────────────────────────────────────────
