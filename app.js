@@ -515,7 +515,7 @@
     timesEl.innerHTML = `
       <div class="tl-scale">${ticks.join('')}</div>
       <div class="tl-track">${barSegs.map((sg, i) => {
-        const style = `left:${pct(sg.start)};width:calc(${pct(sg.end)} - ${pct(sg.start)});--i:${i}`;
+        const style = `left:${pct(sg.start)};width:calc(${pct(sg.end)} - ${pct(sg.start)});--i:${i};--p:${((sg.start - lo) / (hi - lo)).toFixed(3)}`;
         const inner = sg.k === 'act' ? `<b>${sg.n}</b>` : '';
         if (sg.k !== 'act' && (sg.k === 'walk' || sg.end - sg.start < TINY))
           return `<span class="tl-seg tl-${sg.k} tl-tiny" style="${style}" aria-hidden="true"></span>`;
@@ -712,6 +712,8 @@
     const ms = CARD_DEADLINE - Date.now(), d = Math.floor(ms / 864e5), hr = Math.floor(ms % 864e5 / 36e5);
     return `⏳ Cards lock <b>Sat 3 Oct, 09:00</b>: ${d ? d + ' days ' : ''}${hr} h to go.`;
   };
+  // someone with a full line gets a gold-and-pink site: logo, title, day bar and clock
+  function markBingoed(on) { document.documentElement.classList.toggle('bingoed', on); }
   function renderBingo(celebrate) {
     const playing = !!bingo.seed, isLocked = locked();
     $('#bingoGate').hidden = playing; $('#bingoPlay').hidden = !playing;
@@ -732,10 +734,12 @@
     $('#bingo').innerHTML = cells.map((c, i) =>
       `<button data-i="${i}" data-k="${c.k}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}"${winCells.has(i) ? ` style="--k:${pos[i]}" data-letter="${letter[i] || ''}"` : ''} title="${c.k === 'dare' ? 'Dare: only if you did it' : 'Moment: if it happened'}"><span class="bk" aria-hidden="true">${c.k === 'dare' ? '🎯' : '✨'}</span><span class="bt">${esc(c.t)}</span></button>`).join('');
     $('#bingoWon').hidden = !won.length;
-    if (celebrate != null && won.length > celebrate) confetti();
+    if (celebrate != null && won.length > celebrate) confetti(true);
+    markBingoed(won.length > 0);
     return won.length;
   }
   let wins = 0;
+  markBingoed(!!bingo.seed && lines.some(l => l.every(i => bingo.hits.includes(i))));
   const modal = $('#bingoModal');
   function openBingo() { wins = renderBingo(null); modal.showModal(); }
   $('#bingoClose').onclick = () => modal.close();
@@ -810,26 +814,36 @@
   });
 
   // ── confetti ───────────────────────────────────────────
-  function confetti() {
+  function confetti(big) {
     const cv = $('#confetti'), ctx = cv.getContext('2d');
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    const cols = ['#c2417a', '#d9b35f', '#2b8fb3', '#3f9c6d', '#f6c1cf', '#ffffff'];
-    const bits = Array.from({ length: 160 }, () => ({
-      x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .35,
-      vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, r: Math.random() * 6 + 3,
-      c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6, va: (Math.random() - .5) * .3,
+    const host = document.querySelector('dialog[open]') || document.body;
+    if (cv.parentNode !== host) host.appendChild(cv);
+    const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = W * dpr; cv.height = H * dpr; // resets the transform too
+    ctx.scale(dpr, dpr);
+    const cols = ['#e2527c', '#f6c453', '#f08a5d', '#ffffff', '#f6c1cf', '#ffe08a', '#c2417a'];
+    const n = big ? Math.round(Math.min(320, W * .6)) : 160;
+    const burst = (x, y, dir, count) => Array.from({ length: count }, () => ({
+      x, y, vx: dir * (Math.random() * 9 + 3) + (dir ? 0 : (Math.random() - .5) * 14),
+      vy: -Math.random() * (big ? 17 : 14) - 5, r: Math.random() * 7 + 4,
+      c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6, va: (Math.random() - .5) * .35,
+      wob: Math.random() * 6,
     }));
+    const bits = big
+      ? [...burst(0, H * .7, 1, n / 3), ...burst(W, H * .7, -1, n / 3), ...burst(W / 2, H * .45, 0, n / 3)]
+      : burst(W / 2, H * .35, 0, n);
+    const frames = big ? 260 : 150;
     let t = 0;
     (function tick() {
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.clearRect(0, 0, W, H);
       bits.forEach(b => {
-        b.vy += .35; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.a += b.va;
+        b.vy += .3; b.vx *= .985; b.x += b.vx + Math.sin((t + b.wob * 10) / 9) * .8; b.y += b.vy; b.a += b.va;
         ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c;
+        ctx.globalAlpha = t > frames - 40 ? (frames - t) / 40 : 1;
         ctx.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); ctx.restore();
       });
-      if (++t < 150) requestAnimationFrame(tick); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+      if (++t < frames) requestAnimationFrame(tick); else ctx.clearRect(0, 0, W, H);
     })();
   }
 

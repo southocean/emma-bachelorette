@@ -651,3 +651,47 @@ dialog.modal::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blu
 @media (prefers-reduced-motion: reduce) {
   .bingo button.win, .bingo button.win::after { animation: none; }
 }
+
+/* confetti also lives inside the open bingo popup */
+dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; }
+
+/* ── the bingoed look: a player with a full line gets a gold-to-pink site ── */
+:root { --bingo-grad: linear-gradient(135deg, #f6c453 0%, #f08a5d 45%, #e2527c 100%); }
+/* logo: gradient, glow, and a sheen every few seconds */
+.bingoed .logo { position: relative; overflow: hidden; background: var(--bingo-grad); border-color: transparent; box-shadow: 0 0 0 2px #f6c453, 0 4px 16px rgba(226, 82, 124, .45); animation: bingoGlow 2.4s ease-in-out infinite; }
+.bingoed .logo::after {
+  content: ''; position: absolute; top: -30%; bottom: -30%; left: 0; width: 55%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.8), transparent);
+  transform: translateX(-180%) skewX(-15deg); animation: bingoSheen 3.2s ease-in-out infinite;
+}
+/* the title's "Emma edition" shimmers gold-pink */
+.bingoed .brand h1 em {
+  background: linear-gradient(90deg, #f6c453, #e2527c, #f08a5d, #f6c453); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: bingoShift 6s linear infinite;
+}
+.bingoed [data-tab="bingo"]::after { content: ' 🏆'; }
+/* day bar: gradient blocks, a sheen that travels along the day */
+.bingoed .tl-seg.tl-act { background: var(--bingo-grad); }
+.bingoed .tl-seg.tl-act::after {
+  content: ''; position: absolute; top: -40%; bottom: -40%; left: 0; width: 40px; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.85), transparent);
+  transform: translateX(-60px) skewX(-15deg);
+  animation: bingoSegSheen 3.6s ease-in-out infinite; animation-delay: calc(var(--p, 0) * 1.4s);
+}
+.bingoed .times { border-color: #f6c453; box-shadow: 0 0 0 1px #f6c453, 0 2px 12px rgba(246, 196, 83, .35); }
+/* clock: gradient rim and time */
+.bingoed .clock {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--bingo-grad) border-box;
+  box-shadow: 0 4px 18px rgba(226, 82, 124, .35);
+}
+.bingoed .clock .rim { stroke: #f08a5d; }
+.bingoed .clock .hand.s, .bingoed .clock .pin { stroke: #e2527c; fill: #e2527c; }
+.bingoed .clock .digits { background: var(--bingo-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@keyframes bingoGlow { 0%, 100% { box-shadow: 0 0 0 2px #f6c453, 0 4px 14px rgba(226, 82, 124, .4); } 50% { box-shadow: 0 0 0 3px #ffe08a, 0 6px 22px rgba(246, 196, 83, .65); } }
+@keyframes bingoSheen { 0% { transform: translateX(-180%) skewX(-15deg); } 40%, 100% { transform: translateX(280%) skewX(-15deg); } }
+@keyframes bingoSegSheen { 0% { transform: translateX(-60px) skewX(-15deg); } 35%, 100% { transform: translateX(260px) skewX(-15deg); } }
+@keyframes bingoShift { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bingoed .logo, .bingoed .logo::after, .bingoed .brand h1 em, .bingoed .tl-seg.tl-act::after { animation: none; }
+}
