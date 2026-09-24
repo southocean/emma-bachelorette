@@ -1,13 +1,17 @@
-// Rebuilds admin.enc.js from _private/traditions.json (which is gitignored).
+// Rebuilds admin.enc.js from the gitignored _private/ files:
+//   _private/traditions.json   the traditions list (Traditions tab)
+//   _private/secret-plan.json  Nam's secret version of the plan (+ surprise places)
 //   node tools/encode.js
-// XOR with the gate word + base64. This hides the list from a casual view-source,
+// XOR with the gate word + base64. This hides the content from a casual view-source,
 // nothing more: it is obfuscation, not security.
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
 const KEY = Buffer.from('konami');
-const src = fs.readFileSync(path.join(root, '_private', 'traditions.json'));
-JSON.parse(src); // fail loudly on bad JSON
+const read = f => JSON.parse(fs.readFileSync(path.join(root, '_private', f), 'utf8')); // fails loudly on bad JSON
+const traditions = read('traditions.json');
+const secret = read('secret-plan.json');
+const src = Buffer.from(JSON.stringify({ ...traditions, secretPlan: secret.plan, secretPlaces: secret.places || [] }), 'utf8');
 const out = Buffer.alloc(src.length);
 for (let i = 0; i < src.length; i++) out[i] = src[i] ^ KEY[i % KEY.length];
 fs.writeFileSync(path.join(root, 'admin.enc.js'),

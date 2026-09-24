@@ -2,6 +2,7 @@
 //
 // Place fields:
 //   id, name, cat, lat, lng
+//   venue:  the real name/address of the place, when the name is an activity
 //   plan:   { day: 'fri'|'sat'|'sun', step: n } when it is in the itinerary, else absent
 //   hook:   one line shown on hover
 //   what:   the longer "why go" text shown on click
@@ -29,7 +30,7 @@ window.CATS = {
 window.PLACES = [
   // ───────── In the plan (activities, then the logistics pins) ─────────
   {
-    id: 'bauchladen', name: 'Narinkkatori — Emma\'s belly-tray shop', cat: 'make', lat: 60.1692, lng: 24.9328,
+    id: 'bauchladen', name: 'Emma\'s belly-tray shop', venue: 'Narinkkatori, Kamppi', cat: 'make', lat: 60.1692, lng: 24.9328,
     hook: 'Bauchladen: Emma wears a vendor\'s tray and sells silly things to strangers',
     what: 'A German bachelorette tradition: the bride wears a vendor\'s tray of tiny things (sweets, lucky charms, silly items) and sells them to strangers to fund the night. Narinkkatori is the big open square outside Kamppi, busy with Saturday shoppers and 2 minutes from Quê Em. Emma is the saleswoman; the rest of you are her marketing team. Everything she earns goes into a jar that pays for the first round at karaoke.',
     cost: '≈ €5 stock (shared)', costPP: 5, time: '1 h', energy: 3,
@@ -43,7 +44,7 @@ window.PLACES = [
     ],
   },
   {
-    id: 'queem', name: 'Quê Em', cat: 'eat', lat: 60.1682, lng: 24.9342,
+    id: 'queem', name: 'Quê Em', venue: 'Kansakoulukatu 1, Kamppi', cat: 'eat', lat: 60.1682, lng: 24.9342,
     hook: 'Sat dinner: à la carte · Sun lunch: the €29.90 Vietnamese buffet',
     what: 'The reason for the trip, visited twice. Saturday dinner is à la carte, a first taste of the kitchen. Sunday lunch is the weekend buffet: bánh mì, phở, summer rolls, noodle and rice dishes, desserts and drinks, all you can eat for €29.90. It comes on Sunday on purpose: nothing physical follows it, just coffee, a monument and the flight. It is 2 minutes from Narinkkatori and next to Kamppi metro.',
     cost: 'à la carte ≈ €15–25 · buffet €29.90', costPP: 30, time: '1–1.5 h', energy: 1,
@@ -56,7 +57,7 @@ window.PLACES = [
     url: 'https://queem.fi/en/menu/brunch/',
   },
   {
-    id: 'activate', name: 'Activate Itis — the game', cat: 'make', lat: 60.2107, lng: 25.0823,
+    id: 'activate', name: 'LED jump Activate Itis', venue: 'Activate, Itis shopping centre, Itäkeskus', cat: 'make', lat: 60.2107, lng: 25.0823,
     hook: 'One hour of active gaming rooms: jump, climb, dodge and solve as a team of 4',
     what: 'A physical game centre: you move through rooms of short challenges where the floor, walls and lights are the game, jumping, hiding, climbing and solving puzzles together. One session is 60 minutes, for teams of 2–5, so the four of you play as one team. It is in the Itis shopping centre in Itäkeskus, 15 minutes east by metro.',
     cost: '≈ €20–30 (check)', costPP: 25, time: '1 h', energy: 3,
@@ -69,7 +70,7 @@ window.PLACES = [
     url: 'https://playactivate.fi/en/itis',
   },
   {
-    id: 'suomenlinna', name: 'Suomenlinna — champagne spray & dance video', cat: 'make', lat: 60.1406, lng: 24.9862,
+    id: 'suomenlinna', name: 'Champagne spray & dance', venue: 'Suomenlinna sea fortress', cat: 'make', lat: 60.1406, lng: 24.9862,
     hook: 'Sea-fortress cliffs + open Baltic: the two videos of the trip',
     what: 'An 18th-century island fortress with grassy ramparts, tunnels, cannons and cliffs straight onto the open sea. Walk the blue route to the far end (Kustaanmiekka / King\'s Gate area) and film both videos there: the champagne spray on the rocks with nothing but sea behind Emma, and the 20-second dance on the ramparts. Then wander back slowly to the ferry.',
     cost: 'Free (bottle from Alko)', costPP: 0, time: '1.5 h', energy: 2,
@@ -82,7 +83,7 @@ window.PLACES = [
     url: 'https://www.suomenlinna.fi/en/',
   },
   {
-    id: 'kotiharju', name: 'Kotiharju Sauna — the bridal sauna', cat: 'sauna', lat: 60.1868, lng: 24.9537,
+    id: 'kotiharju', name: 'Bridal sauna', venue: 'Kotiharju Sauna, Kallio', cat: 'sauna', lat: 60.1868, lng: 24.9537,
     hook: 'Morsiussauna: the old Finnish bride\'s sauna, in the city\'s last wood-fired public sauna',
     what: 'The trip\'s traditional Finnish ritual: morsiussauna, the bridal sauna. Before a wedding the bride\'s women took her to the sauna to "wash off" her maiden life. She was whisked with a birch vihta, given marriage advice, sung to, and scrubbed (traditionally with a paste of egg, salt and flour, if you dare). Kotiharju is Helsinki\'s last wood-heated public sauna, open since 1928 in Kallio, and it rents out a private sauna, so you can do it properly: songs, advice, the vihta, no strangers. It is also the day\'s rest before the evening.',
     cost: '≈ €20 (private sauna) · public €16', costPP: 20, time: '1h45', energy: 1,
@@ -90,7 +91,7 @@ window.PLACES = [
     url: 'https://www.kotiharjunsauna.fi/en',
   },
   {
-    id: 'saigonese', name: 'The Saigonese — Home Kitchen & Coffee', cat: 'eat', lat: 60.1674, lng: 24.9265,
+    id: 'saigonese', name: 'Lunch at Quán a Lợi', venue: 'The Saigonese Home Kitchen & Coffee, Lapinlahdenkatu 21', cat: 'eat', lat: 60.1674, lng: 24.9265,
     hook: 'Our friend\'s Vietnamese kitchen: vegan phở, curry, steamed buns',
     what: 'A cosy Vietnamese home kitchen and coffee place run by a friend of Nam\'s, with nearly half the menu vegan: vegan phở, curry, steamed buns and summer rolls, plus Vietnamese coffee. Saturday lunch, 5 minutes from Narinkkatori and next to Kamppi metro for Activate.',
     cost: '≈ €15–20', costPP: 18, time: '1 h', energy: 1,
@@ -98,51 +99,51 @@ window.PLACES = [
     url: 'https://the-saigonese.com/food-menu/',
   },
   {
-    id: 'populus', name: 'Populus — karaoke', cat: 'night', lat: 60.1893, lng: 24.9530,
+    id: 'populus', name: 'Karaoke', venue: 'Populus, Kallio', cat: 'night', lat: 60.1893, lng: 24.9530,
     hook: 'One of Helsinki\'s oldest karaoke bars — locals, not tourists',
     what: 'Finland takes karaoke seriously: people pick songs with care, the crowd cheers everyone, and a good performer becomes the bar\'s hero for the night, which is exactly Emma\'s natural habitat. Populus is an old-school Kallio karaoke bar. No entry fee; put your names on the list early on a Saturday.',
     cost: 'Free entry · drinks ≈ €8–10 each', costPP: 20, time: 'All night', energy: 3,
     tips: ['Queue a group song AND an Emma solo as soon as you arrive: Saturday lists get long.', 'Learn one Finnish song chorus (e.g. an Irwin Goodman or Kaija Koo classic) and the room will adopt you.', 'If the night keeps going: Wallis on Katajanokka is open until 4:30 with sea views (on the map).'],
   },
   {
-    id: 'herring', name: 'Baltic Herring Market — opening day', cat: 'eat', lat: 60.1676, lng: 24.9526,
-    hook: 'Helsinki\'s oldest festival (since 1743) opens the day you leave',
-    what: 'The Baltic Herring Market opens in Market Square on Sunday 4 October. Fishing boats from the archipelago moor at the quay and sell herring every way possible: fried, pickled in dozens of flavours, on rye bread. Do the herring tasting challenge (see Moments) and browse the archipelago bread and craft stalls. Keep it to tasting: the Quê Em buffet is at lunch.',
+    id: 'herring', name: 'Helsinki\'s oldest festival', venue: 'Baltic Herring Market, Market Square', cat: 'eat', lat: 60.1676, lng: 24.9526,
+    hook: 'The Baltic Herring Market (since 1743) opens the day you fly home',
+    what: 'The special occasion: the Baltic Herring Market, Helsinki\'s oldest festival (since 1743), opens in Market Square on Sunday 4 Oct, the day you fly home. Fishing boats from the archipelago moor at the quay and sell herring every way possible: fried, pickled in dozens of flavours, on rye bread. Do the herring tasting challenge (see Moments) and browse the archipelago bread and craft stalls. Keep it to tasting: the Quê Em buffet is at lunch.',
     cost: '≈ €5–10 tasting', costPP: 8, time: '1h15', energy: 1,
     tips: ['Open Sun 9–19. Go before 12 for the least crowded stalls.', 'Fried herring (paistetut silakat) is the classic, if you want a proper plate after all.', 'Until 10 Oct, ten Helsinki restaurants also have herring specials on the menu.'],
     url: 'https://silakkamarkkinat.fi/en/',
   },
   {
-    id: 'uspenski', name: 'Uspenski Cathedral', cat: 'see', lat: 60.1686, lng: 24.9597,
+    id: 'uspenski', name: 'Cathedral', venue: 'Uspenski Cathedral', cat: 'see', lat: 60.1686, lng: 24.9597,
     hook: 'Red-brick Orthodox cathedral on a rock, 5 min from the market',
     what: 'The biggest Orthodox church in Western Europe, with golden domes and a view over the harbour from its rocky hill. A quick, free, calm stop after the market.',
     cost: 'Free', costPP: 0, time: '20 min', energy: 1,
     tips: ['Opening hours on Sundays can be limited because of services; the view from the terrace is always open.'],
   },
   {
-    id: 'senate', name: 'Helsinki Cathedral & Senate Square', cat: 'see', lat: 60.1697, lng: 24.9522,
+    id: 'senate', name: 'More cathedral & square', venue: 'Helsinki Cathedral & Senate Square', cat: 'see', lat: 60.1697, lng: 24.9522,
     hook: 'The white cathedral on top of the most famous stairs in Finland',
     what: 'The white, green-domed Lutheran cathedral above Senate Square, Helsinki\'s postcard view. Climb the big staircase, look inside (free, calm, five minutes), and take the group photo from the bottom of the steps.',
     cost: 'Free', costPP: 0, time: '30 min', energy: 1,
     tips: ['Sunday morning services mean visitors usually get in from around midday; the steps and square are always open.'],
   },
   {
-    id: 'regatta', name: 'Café Regatta — letters to future Emma', cat: 'make', lat: 60.1790, lng: 24.9115,
+    id: 'regatta', name: 'Letter to future Emma', venue: 'Café Regatta', cat: 'make', lat: 60.1790, lng: 24.9115,
     hook: 'Tiny red seaside cabin, huge cinnamon buns, candles & blankets outside',
     what: 'The trip\'s slow ending. A tiny red wooden café by the water, famous for cinnamon buns and outdoor fire pits. Each of you writes a short letter to Emma, sealed, to be opened on her first wedding anniversary. Coffee and a bun, blankets, the sea: this is where the weekend lands softly.',
     cost: '≈ €5–8', costPP: 6, time: '1 h', energy: 1,
     tips: ['Bring 4 envelopes and a pen (or buy postcards at the market).', 'It is popular. If the queue is long, go to the Sibelius Monument first and come back.', 'Some sausage-grilling fire pits outside are free to use.'],
   },
   {
-    id: 'sibelius', name: 'Sibelius Monument', cat: 'see', lat: 60.1821, lng: 24.9131,
-    hook: '600 steel pipes in a park — the last group photo',
+    id: 'sibelius', name: 'The last group photo', venue: 'Sibelius Monument', cat: 'see', lat: 60.1821, lng: 24.9131,
+    hook: '600 steel pipes in a park',
     what: 'The monument to Jean Sibelius, a wave of 600 welded steel pipes in Sibelius Park, 5 minutes from Café Regatta. Last group photo of the trip.',
     cost: 'Free', costPP: 0, time: '15 min', energy: 1,
     tips: ['Tram or bus back to the centre takes ~20 min.'],
   },
   {
-    id: 'fazer', name: 'Fazer Café Kluuvikatu', cat: 'eat', lat: 60.1686, lng: 24.9477,
-    hook: 'Last coffee + Fazer chocolate to take home',
+    id: 'fazer', name: 'Last coffee', venue: 'Fazer Café Kluuvikatu', cat: 'eat', lat: 60.1686, lng: 24.9477,
+    hook: 'Fazer\'s flagship café, 10 minutes from the station',
     what: 'Fazer blue chocolate is the Finnish gift. The flagship café is a pretty, central last stop, 10 minutes\' walk from the station, and the shop sells the chocolate you will bring home.',
     cost: '≈ €5–12', costPP: 8, time: '45 min', energy: 1,
     tips: ['Check Sunday opening hours before you go.'],
@@ -366,7 +367,8 @@ window.PLACES = [
 ];
 
 // The day-by-day plan. Three kinds of step:
-//   { t, act: placeId, do }             an activity: numbered, on the map, has a card
+//   { t, act: placeId, do, name? }      an activity: numbered, on the map, has a card
+//                                        (name overrides the place name in the plan)
 //   { t, go: text, icon, place?, open? } logistics: a thin line between activities.
 //                                        `place` puts it on the route; `open: true` makes
 //                                        it clickable (only the ferry, which has a card)
@@ -395,7 +397,7 @@ window.PLAN = {
       { t: '17:00', go: 'Ferry back to Market Square, tram to Kallio', icon: '⛴️', place: 'ferry', open: true },
       { t: '17:45', act: 'kotiharju', do: 'Vihta, advice and one song each for Emma.' },
       { t: '19:35', go: 'Metro Sörnäinen → Kamppi, ~15 min', icon: '🚇' },
-      { t: '20:00', act: 'queem', do: 'Dinner à la carte: a first taste before tomorrow\'s buffet.', cost: 'à la carte ≈ €15–25', costPP: 20 },
+      { t: '20:00', act: 'queem', name: 'Quê Em à la carte', do: 'Dinner à la carte: a first taste before tomorrow\'s buffet.', cost: 'à la carte ≈ €15–25', costPP: 20 },
       { t: '21:30', go: 'Metro Kamppi → Sörnäinen, walk up to Populus', icon: '🚇' },
       { t: '22:00', act: 'populus', do: 'Karaoke: Emma\'s solo, the group number.' },
     ],
@@ -408,12 +410,12 @@ window.PLAN = {
       { t: '11:50', act: 'uspenski', do: 'Up the hill for the harbour view.' },
       { t: '12:20', act: 'senate', do: 'The cathedral, the steps, the group photo.' },
       { t: '12:50', go: 'Tram or a 20-min walk to Kamppi · buy an ABC day ticket (covers the airport)', icon: '🚋', costPP: 12.8, label: 'HSL ABC day ticket' },
-      { t: '13:15', act: 'queem', do: 'The €29.90 Vietnamese buffet, finally.', cost: '€29.90 buffet', costPP: 30 },
+      { t: '13:15', act: 'queem', name: 'Quê Em buffet', do: 'The €29.90 Vietnamese buffet, finally.', cost: '€29.90 buffet', costPP: 30 },
       { t: '14:45', go: 'Tram to Töölö, ~15 min', icon: '🚋' },
       { t: '15:00', act: 'regatta', do: 'Cinnamon buns and letters to future Emma.' },
-      { t: '16:05', act: 'sibelius', do: 'The last group photo.' },
+      { t: '16:05', act: 'sibelius', do: '600 steel pipes, all four of us in front.' },
       { t: '16:30', go: 'Tram back to the centre, ~20 min', icon: '🚋' },
-      { t: '17:00', act: 'fazer', do: 'Last coffee + chocolate to take home.' },
+      { t: '17:00', act: 'fazer', do: 'Fazer\'s flagship café before the train.' },
       { t: '18:45', go: 'Bags from the lockers · train ~19:00 · at HEL by ~19:45 · flight 21:15', icon: '✈️', place: 'airport' },
     ],
   },
@@ -449,4 +451,6 @@ window.BINGO = [
   'A stranger congratulates the bride', 'Try salmiakki (and survive)', 'Wave back at a tram',
   'Spot another polttarit group', 'Squirrel sighting', 'Emma dances in public',
   'Someone cries (happy)', 'Order in Finnish', 'Get a free sample at the market', 'Everyone in one photo, no selfie stick',
+  'Emma sells out her tray', 'A stranger buys a sung line', 'Champagne hits someone', 'Spot the SkyWheel from the ferry',
+  'A Finn joins our karaoke song', 'Someone says "Moi!" to us first', 'Emma gets whisked with the vihta', 'Someone gets lost in Activate',
 ];

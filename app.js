@@ -37,15 +37,24 @@
   }).addTo(map);
 
   const markers = {};
+  // P is the plan on screen: the public PLAN, or Nam's secret plan when admin mode has it on.
+  // Surprise places from the secret plan only exist on the map while it is on.
+  let P = PLAN, secretOn = false, secretPlaces = [];
+  const allPlaces = () => secretOn ? PLACES.concat(secretPlaces) : PLACES;
   const planIndex = {}; // activity id -> [{day, n}]
   const goIndex = {};   // logistics place id -> [day]
-  Object.entries(PLAN).forEach(([day, d]) => {
-    let n = 0;
-    d.steps.forEach(s => {
-      if (s.act) { n++; (planIndex[s.act] ||= []).push({ day, n }); }
-      else if (s.go && s.place) (goIndex[s.place] ||= []).includes(day) || goIndex[s.place].push(day);
+  function indexPlan() {
+    for (const k in planIndex) delete planIndex[k];
+    for (const k in goIndex) delete goIndex[k];
+    Object.entries(P).forEach(([day, d]) => {
+      let n = 0;
+      d.steps.forEach(s => {
+        if (s.act && byId[s.act]) { n++; (planIndex[s.act] ||= []).push({ day, n }); }
+        else if (s.go && s.place) (goIndex[s.place] ||= []).includes(day) || goIndex[s.place].push(day);
+      });
     });
-  });
+  }
+  indexPlan();
   const GMAP = p => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
   const PIN_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>';
 
@@ -60,18 +69,19 @@
     return L.divIcon({ className: '', html: `<div class="dot" style="background:${color}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
   }
 
-  PLACES.forEach(p => {
+  function addMarker(p) {
     const m = L.marker([p.lat, p.lng], { icon: iconFor(p, 'sat'), riseOnHover: true })
       // pins near the top would put the tooltip under the filter chips, so open those downwards
       .on('mouseover', () => {
         const low = map.latLngToContainerPoint(m.getLatLng()).y < 190;
         Object.assign(m.getTooltip().options, low ? { direction: 'bottom', offset: [0, 12] } : { direction: 'top', offset: [0, -12] });
       })
-      .bindTooltip(`<b>${esc(p.name)}</b>${esc(p.hook)}<br><span class="c">${esc(p.cost)}</span>`,
+      .bindTooltip(`<b>${esc(p.name)}</b>${p.venue ? `<span class="v">${esc(p.venue)}</span>` : ''}${esc(p.hook)}<br><span class="c">${esc(p.cost)}</span>`,
         { className: 'tip', direction: 'top', offset: [0, -12], opacity: 1 })
       .on('click', () => select(p.id, { fly: false }));
     markers[p.id] = m;
-  });
+  }
+  PLACES.forEach(addMarker);
 
   // ── filters ────────────────────────────────────────────
   const on = Object.fromEntries(Object.keys(CATS).map(k => [k, true]));
@@ -88,7 +98,8 @@
   let day = 'sat';
   let route;
   function drawMarkers() {
-    PLACES.forEach(p => {
+    secretPlaces.forEach(p => { if (!secretOn) markers[p.id].remove(); });
+    allPlaces().forEach(p => {
       const inDay = (planIndex[p.id] || []).some(h => h.day === day);
       const show = inDay || on[p.cat];
       const m = markers[p.id];
@@ -102,7 +113,7 @@
   function drawRoute() {
     if (route) route.remove();
     const pts = [];
-    PLAN[day].steps.forEach(s => {
+    P[day].steps.forEach(s => {
       const id = s.act || (s.go && s.place !== 'airport' ? s.place : null);
       if (!id) return;
       const p = byId[id], last = pts[pts.length - 1];
@@ -135,9 +146,9 @@
     const hits = planIndex[id] || [];
     const gos = goIndex[id] || [];
     const kick = hits.length
-      ? hits.map(h => `<span style="color:${DAYC[h.day]}">${PLAN[h.day].label} · stop ${h.n}</span>`).join(' &nbsp; ')
+      ? hits.map(h => `<span style="color:${DAYC[h.day]}">${P[h.day].label} · stop ${h.n}</span>`).join(' &nbsp; ')
       : gos.length
-        ? gos.map(d => `<span style="color:${DAYC[d]}">${PLAN[d].label} · on the way</span>`).join(' &nbsp; ')
+        ? gos.map(d => `<span style="color:${DAYC[d]}">${P[d].label} · on the way</span>`).join(' &nbsp; ')
         : `<span style="color:${CATS[p.cat].color}">${esc(CATS[p.cat].label)} · alternative</span>`;
     const energy = '●'.repeat(p.energy) + '○'.repeat(3 - p.energy);
     const from = origin && origin !== id ? byId[origin] : null;
@@ -145,6 +156,7 @@
       <button class="x" aria-label="Close">✕</button>
       <div class="kick">${kick}</div>
       <h2>${esc(p.name)}</h2>
+      ${p.venue ? `<p class="venue">${PIN_SVG}${esc(p.venue)}</p>` : ''}
       <p class="hook">${esc(p.hook)}</p>
       <dl class="facts">
         <div><dt>Budget / person</dt><dd>${esc(p.cost)}</dd></div>
@@ -212,9 +224,10 @@
   MOMENTS.forEach(m => { if (m.where) (momentsAt[m.where] ||= []).push(m.name + ' ' + m.how); });
   const index = PLACES.map(p => ({
     p,
-    name: fold(p.name),
+    name: fold(p.name + (p.venue ? ' ' + p.venue : '')),
     hook: fold(p.hook),
     rest: fold([p.what, p.tips.join(' '), p.cost, CATS[p.cat].label, (momentsAt[p.id] || []).join(' '),
+      Object.values(PLAN).flatMap(d => d.steps).filter(s => s.act === p.id && s.name).map(s => s.name).join(' '),
       (planIndex[p.id] || []).map(h => PLAN[h.day].label).join(' ') || (goIndex[p.id] ? 'logistics' : 'alternative')].join(' ')),
   }));
   const qEl = $('#q'), rEl = $('#results'), qClear = $('#qClear');
@@ -263,7 +276,7 @@
           const hits = planIndex[p.id] || [];
           const color = hits.length ? DAYC[hits[0].day] : CATS[p.cat].color;
           const where = hits.length
-            ? hits.map(h => `${PLAN[h.day].label} · stop ${h.n}`).join(', ')
+            ? hits.map(h => `${P[h.day].label} · stop ${h.n}`).join(', ')
             : `${CATS[p.cat].label} · alternative`;
           return `<li role="option" id="r-${p.id}" data-id="${p.id}" aria-selected="${i === active}">
             <i style="background:${color}"></i>
@@ -313,21 +326,33 @@
 
   // ── plan tab ───────────────────────────────────────────
   const daysEl = $('#days'), timesEl = $('#times');
-  daysEl.innerHTML = Object.entries(PLAN).map(([k, d]) =>
-    `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)} · ≈ €${Math.round(dayCost(k))}</span></button>`).join('');
+  function renderDays() {
+    daysEl.innerHTML = Object.entries(P).map(([k, d]) =>
+      `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)} · ≈ €${Math.round(dayCost(k))}</span></button>`).join('')
+      + (isAdmin() ? `<button class="secret-toggle" id="secretToggle" aria-pressed="${secretOn}" title="${secretOn ? 'Showing the secret plan: click for the public one' : 'Show the secret plan'}" aria-label="Secret plan">🤫</button>` : '');
+    daysEl.classList.toggle('secret', secretOn);
+  }
   daysEl.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    setDay(b.dataset.day);
+    if (b.id === 'secretToggle') setSecret(!secretOn);
+    else setDay(b.dataset.day);
   });
+  function setSecret(v) {
+    secretOn = v && isAdmin();
+    try { sessionStorage.setItem('emma_secret', secretOn ? '1' : '0'); } catch {}
+    P = secretOn && window.SECRET_PLAN ? window.SECRET_PLAN : PLAN;
+    if (!P[day]) day = 'sat';
+    indexPlan(); renderDays(); setDay(day); renderBudget();
+  }
 
   function stepCost(s) {
     if (s.costPP != null) return s.costPP;
-    return s.act ? byId[s.act].costPP : 0;
+    return s.act && byId[s.act] ? byId[s.act].costPP : 0;
   }
-  function dayCost(k) { return PLAN[k].steps.reduce((sum, s) => sum + stepCost(s), 0); }
+  function dayCost(k) { return P[k].steps.reduce((sum, s) => sum + stepCost(s), 0); }
 
   function renderDay() {
-    const d = PLAN[day];
+    const d = P[day];
     let n = 0, prevAct = null, goSince = false;
     const items = d.steps.map(s => {
       if (s.note) { goSince = true; return `<li class="note"><span class="t">${esc(s.t)}</span>${esc(s.note)}</li>`; }
@@ -339,6 +364,7 @@
           : `<li class="go">${txt}</li>`;
       }
       const p = byId[s.act];
+      if (!p) return ''; // a secret-plan step pointing at a place that is not defined
       // consecutive activities with no logistics line between them get a walking estimate
       const walk = prevAct && !goSince && prevAct.id !== p.id
         ? `<li class="go"><span class="gi" aria-hidden="true">🚶</span><span class="gt">${howFar(prevAct, p)}</span></li>` : '';
@@ -347,7 +373,7 @@
         <span class="num">${n}</span>
         <div class="body">
           <button class="main" data-place="${p.id}">
-            <span class="row1"><span class="t">${esc(s.t)}</span><span class="n">${esc(p.name)}</span></span>
+            <span class="row1"><span class="t">${esc(s.t)}</span><span class="n">${esc(s.name || p.name)}</span></span>
             <span class="d">${esc(s.do)}</span>
             <span class="c">${esc(s.cost || p.cost)}</span>
           </button>
@@ -358,10 +384,10 @@
     $('#dayView').innerHTML = `<ol class="steps" style="--dc:${DAYC[day]}">${items}</ol>`;
 
     // the day at a glance, on the map: one time per activity
-    const acts = d.steps.filter(s => s.act);
+    const acts = d.steps.filter(s => s.act && byId[s.act]);
     timesEl.style.setProperty('--dc', DAYC[day]);
     timesEl.innerHTML = acts.length
-      ? acts.map((s, i) => `<button data-place="${s.act}" title="${esc(byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
+      ? acts.map((s, i) => `<button data-place="${s.act}" title="${esc(s.name || byId[s.act].name)}"><i>${i + 1}</i>${esc(s.t)}</button>`).join('')
       : `<span class="times-none">Arrival night: no activities</span>`;
   }
   $('#dayView').addEventListener('click', e => {
@@ -373,7 +399,7 @@
 
   function setDay(k) {
     day = k;
-    daysEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.day === k));
+    daysEl.querySelectorAll('button[data-day]').forEach(b => b.setAttribute('aria-pressed', b.dataset.day === k));
     renderDay(); drawMarkers(); drawRoute(); closeDetail();
   }
 
@@ -388,43 +414,59 @@
   });
 
   // ── bingo ──────────────────────────────────────────────
-  function newCard() {
-    const a = BINGO.slice();
-    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-    return { cells: a.slice(0, 16), hit: [] };
+  // A handful of fixed, numbered cards instead of a random shuffle: Emma picks the
+  // number, everyone opens the same card on their own phone. Seeded, so card 3 is the
+  // same 16 squares in the same places on every device.
+  const CARDS = 5;
+  function seeded(n) {
+    let t = n * 2654435761 >>> 0;
+    return () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
   }
-  let card = store.get('emma_bingo', null);
-  if (!card || !Array.isArray(card.cells) || card.cells.length !== 16) card = newCard();
+  function cardCells(n) {
+    const rnd = seeded(n), a = BINGO.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a.slice(0, 16);
+  }
+  let bingo = store.get('emma_bingo2', null);
+  if (!bingo || !(bingo.card >= 1 && bingo.card <= CARDS) || typeof bingo.hits !== 'object') bingo = { card: 1, hits: {} };
   const lines = [];
   for (let i = 0; i < 4; i++) {
     lines.push([0, 1, 2, 3].map(j => i * 4 + j), [0, 1, 2, 3].map(j => j * 4 + i));
   }
   lines.push([0, 5, 10, 15], [3, 6, 9, 12]);
+  $('#bingoPick').innerHTML = Array.from({ length: CARDS }, (_, i) =>
+    `<button data-card="${i + 1}" aria-pressed="${bingo.card === i + 1}" aria-label="Card ${i + 1}">${i + 1}</button>`).join('');
   function renderBingo(celebrate) {
-    const hit = new Set(card.hit);
+    const cells = cardCells(bingo.card);
+    const hit = new Set(bingo.hits[bingo.card] || []);
     const won = lines.filter(l => l.every(i => hit.has(i)));
     const winCells = new Set(won.flat());
-    $('#bingo').innerHTML = card.cells.map((c, i) =>
+    $('#bingo').innerHTML = cells.map((c, i) =>
       `<button data-i="${i}" aria-pressed="${hit.has(i)}" class="${winCells.has(i) ? 'win' : ''}">${esc(c)}</button>`).join('');
+    $('#bingoPick').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.card === bingo.card));
     if (celebrate != null && won.length > celebrate) confetti();
     return won.length;
   }
   let wins = renderBingo(null);
+  $('#bingoPick').addEventListener('click', e => {
+    const b = e.target.closest('[data-card]'); if (!b) return;
+    bingo.card = +b.dataset.card; store.set('emma_bingo2', bingo); wins = renderBingo(null);
+  });
   $('#bingo').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    const i = +b.dataset.i;
-    card.hit = card.hit.includes(i) ? card.hit.filter(x => x !== i) : card.hit.concat(i);
-    store.set('emma_bingo', card);
-    wins = renderBingo(wins) ;
+    const i = +b.dataset.i, h = bingo.hits[bingo.card] || [];
+    bingo.hits[bingo.card] = h.includes(i) ? h.filter(x => x !== i) : h.concat(i);
+    store.set('emma_bingo2', bingo);
+    wins = renderBingo(wins);
   });
-  $('#bingoReset').onclick = () => { card = newCard(); store.set('emma_bingo', card); wins = renderBingo(null); };
+  $('#bingoReset').onclick = () => { bingo.hits[bingo.card] = []; store.set('emma_bingo2', bingo); wins = renderBingo(null); };
 
   // ── budget ─────────────────────────────────────────────
   function renderBudget() {
     let total = 0;
-    const rows = Object.entries(PLAN).map(([k, d]) => {
-      const parts = d.steps.filter(s => stepCost(s)).map(s => {
-        const name = s.label || byId[s.act].name.split(' — ')[0].split(' (')[0];
+    const rows = Object.entries(P).map(([k, d]) => {
+      const parts = d.steps.filter(s => stepCost(s) && (!s.act || byId[s.act])).map(s => {
+        const name = s.label || s.name || byId[s.act].name.split(' — ')[0].split(' (')[0];
         return `${name} €${+stepCost(s).toFixed(2)}`;
       });
       const c = dayCost(k); total += c;
@@ -584,9 +626,19 @@
       <button class="ghost" id="lock">Lock again</button>`;
     $('#lock').onclick = () => {
       try { sessionStorage.removeItem('emma_admin'); } catch {}
-      $('#secretTab').hidden = true; $('#secret').innerHTML = ''; showTab('plan');
+      $('#secretTab').hidden = true; $('#secret').innerHTML = '';
+      setSecret(false); showTab('plan');
     };
     $('#secretTab').hidden = false;
+    // the secret plan: surprise places join byId + get markers, shown only in secret mode
+    window.SECRET_PLAN = data.secretPlan || null;
+    if (!secretPlaces.length) { // register once, even if the gate is opened again
+      secretPlaces = (data.secretPlaces || []).filter(p => p && p.id && !byId[p.id]);
+      secretPlaces.forEach(p => { p.tips ||= []; p.cat = CATS[p.cat] ? p.cat : 'make'; byId[p.id] = p; addMarker(p); });
+    }
+    let wasOn = false;
+    try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
+    setSecret(wasOn);
     if (!quiet) { showTab('secret'); confetti(); }
   }
 
@@ -610,6 +662,7 @@
   paintTheme();
 
   // ── boot ───────────────────────────────────────────────
+  renderDays();
   renderBudget();
   setDay('sat');
   if (isAdmin()) unlock(true);
