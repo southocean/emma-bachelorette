@@ -390,13 +390,18 @@
       const dpx = map.project(from, z).distanceTo(map.project(to, z)), w = map.getSize().x * .7;
       drag.intent = { dir, next, z, from, to, via: transferBetween(sel, next), dip: dpx > w ? Math.min(3, Math.log2(dpx / w)) : 0 };
     }
-    const it = drag.intent, e = p * p * (3 - 2 * p); // smoothstep: eases in and out of the pan
-    map.setView([it.from.lat + (it.to.lat - it.from.lat) * e, it.from.lng + (it.to.lng - it.from.lng) * e], it.z - it.dip * Math.sin(Math.PI * e), { animate: false });
+    const it = drag.intent;
+    // the map stays where it is until the swipe completes (panning under the thumb felt jarring);
+    // only the highlighted pin hands over, halfway through, like the day bar does
+    pinPreview(p < .5 ? sel : it.next);
     barPreview(p < .3 ? [sel] : p < .75 && it.via ? [it.via] : [it.next]);
+  }
+  function pinPreview(id) {
+    Object.entries(markers).forEach(([k, m]) => m.getElement()?.classList.toggle('sel', k === id));
   }
   function cancelIntent(it) {
     if (!it) return;
-    map.flyTo(it.from, it.z, { duration: .35 });
+    pinPreview(sel);
     barPreview([sel]);
   }
   const setSheetX = (x, y = 0) => {
