@@ -590,3 +590,26 @@ dialog.modal::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blu
 .times:hover, .times.expanded { height: 48px; }
 .times:hover .tl-track, .times.expanded .tl-track { height: 27px; }
 .bingo-prize { font-size: 14px; border: 1px solid var(--gold); border-radius: 12px; padding: 9px 12px; margin: 0 0 10px; background: color-mix(in srgb, var(--gold) 10%, var(--surface)); }
+
+/* the clock sits under the day bar (which now stays put) */
+.clock { top: 60px; transform-origin: top left; }
+.times:hover ~ .clock { top: 68px; }
+.clock { transition: opacity .26s ease, transform .26s cubic-bezier(.2,.9,.3,1.25), top .16s ease; }
+@media (max-width: 820px) { .clock { top: 104px; } .times:hover ~ .clock { top: 112px; } }
+
+/* an open activity: its block stays lifted with its number, the rest rest thin */
+.times.has-sel .tl-seg.tl-act.sel { height: 18px; border-radius: 5px; box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--dc); z-index: 1; }
+.times.has-sel .tl-seg.tl-act.sel b { opacity: 1; }
+.times.has-sel .tl-seg.tl-go.sel { height: 11px; box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--dc); z-index: 1; }
+/* right after a click the pointer is still on the bar: show the selected look anyway,
+   until the pointer leaves and comes back */
+.times.quiet:hover { height: 40px; }
+.times.quiet:hover .tl-track { height: 19px; }
+.times.quiet .tl-seg.tl-act:not(.sel) { height: 8px; border-radius: 4px; }
+.times.quiet .tl-seg.tl-act:not(.sel) b { opacity: 0; }
+.times.quiet .tl-seg.tl-go:not(.sel), .times.quiet .tl-seg.tl-walk { height: 4px; }
+.times.quiet .tl-seg.tl-go.can-open:not(.sel) { height: 5px; }
+.times.quiet .tl-seg.tl-note { height: 3px; }
+.times.quiet:hover ~ .clock { top: 60px; }
+@media (max-width: 820px) { .times.quiet:hover ~ .clock { top: 104px; } }
+@media (max-width: 820px) { .clock .face { width: 52px; height: 52px; } .clock { padding: 6px 8px 5px; } }

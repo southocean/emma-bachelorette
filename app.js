@@ -559,20 +559,20 @@
     const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget : null;
     if (!to || !(to.closest('button.tl-seg') || to.closest('.tl-tip'))) hideSoon(2900);
   });
-  timesEl.addEventListener('mouseleave', () => hideSoon(2700));
+  timesEl.addEventListener('mouseleave', () => { hideSoon(2700); timesEl.classList.remove('quiet'); });
   let lastPointer = 'mouse';
   timesEl.addEventListener('pointerdown', e => { lastPointer = e.pointerType; });
   timesEl.addEventListener('click', e => {
     if (e.target.closest('.tl-tip')) { // the bubble opens what it describes
       const sg = barSegs[tipFor];
-      if (sg && sg.place) { hideTip(); select(sg.place); }
+      if (sg && sg.place) { hideTip(); timesEl.classList.add('quiet'); select(sg.place); }
       return;
     }
     const b = e.target.closest('button.tl-seg'); if (!b) return;
     const i = +b.dataset.seg, sg = barSegs[i];
     // on a phone the first tap explains (and fades after a few seconds), the second opens
     if (lastPointer === 'touch' && tipFor !== i) { showTip(i); hideSoon(5500); return; }
-    if (sg.place) { hideTip(); select(sg.place); }
+    if (sg.place) { hideTip(); timesEl.classList.add('quiet'); select(sg.place); } // settle into the selected look at once
     else { showTip(i); hideSoon(4500); }
   });
 
@@ -580,6 +580,12 @@
   // screens), and the time strip on the map hands over to the clock, which spins to
   // that activity's time. Closing the card brings the strip back.
   function markActive(id) {
+    hideTip();
+    timesEl.classList.toggle('has-sel', !!id);
+    timesEl.querySelectorAll('.tl-seg[data-seg]').forEach(b => {
+      const sg = barSegs[+b.dataset.seg];
+      b.classList.toggle('sel', !!id && !!sg && sg.place === id);
+    });
     $('#dayView').querySelectorAll('li').forEach(li => {
       const hit = !!id && !!li.querySelector(`[data-place="${id}"]`);
       li.classList.toggle('sel', hit);
@@ -637,7 +643,7 @@
           shown = true;
           base = nowMin(); baseAt = performance.now(); anim = null;
           paint(base);
-          timesEl.classList.add('away'); hideTip();
+          hideTip();
           el.hidden = false;
           requestAnimationFrame(() => el.classList.add('in'));
           cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
@@ -649,7 +655,6 @@
         if (!shown) return;
         shown = false; anim = null;
         el.classList.remove('in');
-        timesEl.classList.remove('away');
         hideTimer = setTimeout(() => { el.hidden = true; cancelAnimationFrame(raf); }, 260);
       },
     };
@@ -724,7 +729,10 @@
   const modal = $('#bingoModal');
   function openBingo() { wins = renderBingo(null); modal.showModal(); }
   $('#bingoClose').onclick = () => modal.close();
-  modal.addEventListener('click', e => { if (e.target === modal) modal.close(); }); // the backdrop closes it
+  // a drag that starts inside the card and is released over the backdrop must not close it
+  let downOnBackdrop = false;
+  modal.addEventListener('pointerdown', e => { downOnBackdrop = e.target === modal; });
+  modal.addEventListener('click', e => { if (e.target === modal && downOnBackdrop) modal.close(); downOnBackdrop = false; });
   $('#bingoForm').addEventListener('submit', e => {
     e.preventDefault();
     if (locked()) { renderBingo(null); return; }
