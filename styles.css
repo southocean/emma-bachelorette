@@ -863,3 +863,6 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   /* the next card rises into place as you swipe (the swipe drives it) */
   .detail.peek { transform: translateY(calc(var(--sheet-y, 0px) + var(--peek-lift, 56px))) scale(var(--peek-s, .93)); }
 }
+
+/* belt and braces: whatever else is on the card, 'dragging' means no transition */
+.detail.dragging, .detail.flying.dragging { transition: none !important; }

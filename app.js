@@ -31,10 +31,10 @@
   }
 
   // ── map ────────────────────────────────────────────────
-  const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([60.1699, 24.9384], 13);
+  const map = L.map('map', { zoomControl: false, attributionControl: true, zoomSnap: .25 }).setView([60.1699, 24.9384], 13);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, className: 'osm',
+    maxZoom: 19, className: 'osm', keepBuffer: 4,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
 
@@ -258,6 +258,18 @@
     return h;
   }
 
+  // Where the map centre goes (at zoom z) so that p sits in the free area above the sheet
+  // (phones) — the same maths reveal() uses, for previewing a swipe.
+  function centreFor(p, z) {
+    if (p.virtual) {
+      const ends = [byId[p.from], byId[p.to]].filter(Boolean);
+      if (!ends.length) return null;
+      p = L.latLngBounds(ends.map(x => [x.lat, x.lng])).getCenter();
+    }
+    const size = map.getSize(), mapBox = map.getContainer().getBoundingClientRect();
+    const free = { x: size.x / 2, y: (sheetTop() - mapBox.top + 100) / 2 };
+    return map.unproject(map.project([p.lat, p.lng], z).subtract([free.x - size.x / 2, free.y - size.y / 2]), z);
+  }
   // Keep the chosen place visible beside the card instead of underneath it.
   function reveal(p, fly, zoom) {
     if (p.virtual) {
@@ -353,6 +365,40 @@
     peekEl.hidden = false; peekEl.scrollTop = 0;
     return next;
   }
+  function barPreview(ids) {
+    // highlight the bar blocks whose target is in ids (activities or transfers)
+    timesEl.querySelectorAll('.tl-seg[data-seg]').forEach(b => {
+      const sg = barSegs[+b.dataset.seg];
+      b.classList.toggle('sel', !!sg && ids.includes(sg.place));
+    });
+  }
+  function transferBetween(a, b) {
+    const steps = P[day].steps, i = steps.findIndex(s => s.act === a), j = steps.findIndex(s => s.act === b);
+    if (i < 0 || j < 0) return null;
+    const [lo, hi] = i < j ? [i, j] : [j, i];
+    const go = steps.slice(lo + 1, hi).find(s => s.go && s.open && s.place);
+    return go ? go.place : null;
+  }
+  function previewIntent(p, dir) {
+    if (!drag) return;
+    if (!drag.intent || drag.intent.dir !== dir) {
+      const next = neighbour(sel, dir);
+      if (!next) { drag.intent = null; return; }
+      const z = map.getZoom(), from = drag.intent ? drag.intent.from : map.getCenter();
+      const to = centreFor(byId[next], z) || from;
+      // a long hop zooms out on the way, like a flight: up, over, and back down
+      const dpx = map.project(from, z).distanceTo(map.project(to, z)), w = map.getSize().x * .7;
+      drag.intent = { dir, next, z, from, to, via: transferBetween(sel, next), dip: dpx > w ? Math.min(3, Math.log2(dpx / w)) : 0 };
+    }
+    const it = drag.intent, e = p * p * (3 - 2 * p); // smoothstep: eases in and out of the pan
+    map.setView([it.from.lat + (it.to.lat - it.from.lat) * e, it.from.lng + (it.to.lng - it.from.lng) * e], it.z - it.dip * Math.sin(Math.PI * e), { animate: false });
+    barPreview(p < .3 ? [sel] : p < .75 && it.via ? [it.via] : [it.next]);
+  }
+  function cancelIntent(it) {
+    if (!it) return;
+    map.flyTo(it.from, it.z, { duration: .35 });
+    barPreview([sel]);
+  }
   const setSheetX = (x, y = 0) => {
     dEl.style.setProperty('--sheet-x', x + 'px');
     dEl.style.setProperty('--sheet-dy', y + 'px');
@@ -379,7 +425,7 @@
     markActive(next);
     setTimeout(() => {
       // the new card is exactly where the panel sits: hand its nodes over as they are
-      dEl.classList.add('dragging');
+      dEl.classList.remove('flying'); dEl.classList.add('dragging'); // jump, don't glide back in
       dEl.replaceChildren(...peekEl.childNodes);
       setSheetX(0); dEl.scrollTop = 0;
       peekEl.hidden = true; peekFor = null;
@@ -410,6 +456,7 @@
       dEl.classList.add('dragging'); peekEl.classList.add('dragging');
       const x = drag.has ? dx : dx * .3;                           // no neighbour: it resists
       setSheetX(x, Math.max(-40, Math.min(60, dy * .5)));
+      if (drag.has) previewIntent(Math.min(1, Math.abs(dx) / (innerWidth * .55)), dir);
       return;
     }
     // vertical: in the full sheet, content scrolls; the sheet only moves down from the very top
@@ -429,7 +476,7 @@
       peekEl.classList.remove('dragging');
       if ((dx < -70 || vx < -.5) && neighbour(sel, 1)) swipeTo(1);
       else if ((dx > 70 || vx > .5) && neighbour(sel, -1)) swipeTo(-1);
-      else { setSheetX(0); setTimeout(() => { if (!dEl.classList.contains('dragging')) { peekEl.hidden = true; peekFor = null; } }, 320); }
+      else { setSheetX(0); cancelIntent(d.intent); setTimeout(() => { if (!dEl.classList.contains('dragging')) { peekEl.hidden = true; peekFor = null; } }, 320); }
       return;
     }
     if (d.axis !== 'y') return;
