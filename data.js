@@ -167,19 +167,33 @@ window.PLACES = [
     url: 'https://www.alko.fi/en',
   },
   {
-    id: 'airport', name: 'Helsinki Airport (HEL)', cat: 'practical', lat: 60.3172, lng: 24.9633,
-    hook: 'Land Fri 22:35 · fly home Sun 21:15 · I/P train to the centre, ~30 min',
-    what: 'Flights: Stockholm ARN 20:40 → HEL 22:35 on Friday 2 Oct, and HEL 21:15 → ARN on Sunday 4 Oct (the hour back is the time difference). Any I or P commuter train links the airport and Central Station, every ~10 minutes until late. You need an ABC-zone ticket, bought in the HSL app before boarding.',
-    cost: '≈ €4.50 each way', costPP: 4.5, time: '30 min', energy: 1,
-    tips: ['Download the HSL app before you fly.', 'Sunday: aim to be at the airport by ~19:45, so the train from Central Station around 19:00.'],
-    url: 'https://www.hsl.fi/en',
+    id: 'airport', name: 'Airport train (HEL ↔ Central Station)', cat: 'practical', lat: 60.3172, lng: 24.9633,
+    venue: 'Helsinki Airport station, under the terminal',
+    hook: 'I or P commuter train, ~30 min, every ~10 min · ABC ticket €4.50',
+    what: 'Both the I and the P commuter trains link the airport and Central Station, one each way round the ring line, so take whichever comes first. The ride is about 30 minutes. Trains run roughly every 10 minutes in the daytime and less often late in the evening, so on Friday night expect a short wait. The airport station is underground, between the terminals: follow the "Trains" signs from arrivals. Flights: ARN 20:40 → HEL 22:35 on Friday; HEL 21:15 → ARN on Sunday (the hour back is the time difference).',
+    cost: '€4.50 ABC single (app) · €4.80 contactless', costPP: 4.5, time: '30 min', energy: 1,
+    tips: [
+      'Friday: an ABC single ticket, €4.50 in the HSL app or €4.80 if you just tap a bank card on the reader. Valid 90 minutes.',
+      'Sunday: the ABC day ticket you buy at lunch already covers the airport, so no extra ticket.',
+      'Buy before you board: the trains have no conductors and ticket inspectors do check.',
+      'Sunday timing: train from Central Station around 19:00, at the airport by ~19:30–19:45 for the 21:15 flight.',
+      'Download the HSL app before you fly and set it up at home.',
+    ],
+    url: 'https://www.hsl.fi/en/travelling/visitors/airport-train',
   },
   {
-    id: 'station', name: 'Central Station', cat: 'practical', lat: 60.1710, lng: 24.9414,
-    hook: 'Bag lockers on Sunday; airport trains every ~10 min',
-    what: 'Check out in the morning and leave bags in the station\'s lockers so Sunday is hands-free, then collect them for the airport train.',
-    cost: 'Lockers ≈ €4–6', costPP: 0, time: '15 min', energy: 1,
-    tips: ['ABC-zone ticket needed for the airport.'],
+    id: 'station', name: 'Central Station bag lockers', cat: 'practical', lat: 60.1710, lng: 24.9414,
+    venue: 'Helsinki Central railway station, west wing',
+    hook: 'Card-paid lockers in the west wing · from €3.90 / 3 h · open 6:00–24:00',
+    what: 'Leave the bags here after checking out on Sunday, so the day is hands-free, and pick them up for the airport train. The lockers are at the north end of the station\'s west wing, near the Eliel Square entrance; the west wing is open 6:00–midnight. Sizes S and XL fit cabin bags; you book 3, 6, 12, 24 or 72 hours, and pay by card at the locker. Sunday 10:00–19:00 is 9 hours, so book 12 hours.',
+    cost: 'from €3.90 (S) / €4.90 (XL) per 3 h · ≈ €5–8 each for the day', costPP: 0, time: '10 min', energy: 1,
+    tips: [
+      'Price depends on size, hours and season: 12 hours costs more than the 3-hour minimum. Share an XL between two carry-ons and split it.',
+      'Overstaying the booking adds an hourly fee, so book 12 hours, not 6.',
+      'Card only. Keep the receipt or code: it opens the locker.',
+      'Lockers full? Luggage-storage apps (Radical Storage, LuggageHero, Nannybag) have spots next to the station.',
+    ],
+    url: 'https://www.vr.fi/en/railway-stations-and-routes/helsinki',
   },
   {
     id: 'itakeskus', name: 'Itäkeskus metro', cat: 'practical', lat: 60.2102, lng: 25.0796,
@@ -378,7 +392,7 @@ window.PLAN = {
   fri: {
     label: 'Fri 2 Oct', title: 'Land',
     steps: [
-      { t: '22:35', go: 'Land at HEL · I/P train to Central Station, ~30 min (ABC ticket)', icon: '✈️', place: 'airport', costPP: 4.5, label: 'Airport train' },
+      { t: '22:35', go: 'Land at HEL · I/P train to Central Station, ~30 min (ABC ticket)', icon: '✈️', place: 'airport', open: true, costPP: 4.5, label: 'Airport train' },
       { t: 'Night', note: 'Check in, veil on Emma, sleep. Saturday is long.' },
     ],
   },
@@ -405,7 +419,7 @@ window.PLAN = {
   sun: {
     label: 'Sun 4 Oct', title: 'Herring & home',
     steps: [
-      { t: '10:00', go: 'Check out · bags into the Central Station lockers', icon: '🧳', place: 'station', costPP: 5, label: 'Lockers' },
+      { t: '10:00', go: 'Check out · bags into the Central Station lockers', icon: '🧳', place: 'station', open: true, costPP: 6, label: 'Lockers' },
       { t: '10:30', act: 'herring', do: 'Opening day: a light tasting, save room for the buffet.' },
       { t: '11:50', act: 'uspenski', do: 'Up the hill for the harbour view.' },
       { t: '12:20', act: 'senate', do: 'The cathedral, the steps, the group photo.' },
@@ -416,7 +430,7 @@ window.PLAN = {
       { t: '16:05', act: 'sibelius', do: '600 steel pipes, all four of us in front.' },
       { t: '16:30', go: 'Tram back to the centre, ~20 min', icon: '🚋' },
       { t: '17:00', act: 'fazer', do: 'Fazer\'s flagship café before the train.' },
-      { t: '18:45', go: 'Bags from the lockers · train ~19:00 · at HEL by ~19:45 · flight 21:15', icon: '✈️', place: 'airport' },
+      { t: '18:45', go: 'Bags from the lockers · airport train ~19:00 · flight 21:15', icon: '✈️', place: 'airport', open: true },
     ],
   },
 };
