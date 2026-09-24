@@ -137,14 +137,23 @@
   let origin = null;
   let viaSearch = false; // was the open card picked from the search list?
   const dEl = $('#detail');
-  function select(id, { fly = true, fromSearch = false } = {}) {
-    const p = byId[id]; if (!p) return;
+  // the selection itself, without the card: marker, day bar, list, clock and map
+  function activate(id, { fly = true, fromSearch = false } = {}) {
     viaSearch = fromSearch;
     closeResults();
     if (sel && markers[sel]) markers[sel].getElement()?.classList.remove('sel');
     sel = id;
     const m = markers[id];
     if (m) { if (!m._map) m.addTo(map); m.getElement()?.classList.add('sel'); }
+  }
+  // the card's buttons, wired to the activity it shows
+  function wireCard(id) {
+    $('.x', dEl).onclick = dismissCard;
+    if ($('[data-origin]', dEl)) $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
+  }
+  function select(id, { fly = true, fromSearch = false } = {}) {
+    const p = byId[id]; if (!p) return;
+    activate(id, { fly, fromSearch });
 
     dEl.innerHTML = cardHTML(id);
     dEl.style.setProperty('--dc', DAYC[day]);
@@ -159,8 +168,7 @@
     dEl.scrollTop = 0;
     reveal(p, fly);
     markActive(id);
-    $('.x', dEl).onclick = dismissCard;
-    if ($('[data-origin]', dEl)) $('[data-origin]', dEl).onclick = () => { origin = origin === id ? null : id; select(id, { fly: false, fromSearch: viaSearch }); };
+    wireCard(id);
   }
   function cardHTML(id) {
     const p = byId[id];
@@ -358,16 +366,26 @@
     const next = neighbour(sel, dir);
     if (!next) { setSheetX(0); return; }
     store.set('emma_swipehint', true);
+    if (peekFor !== next) showPeek(dir);                            // (a fast flick may not have built it yet)
+    peekEl.querySelector('.sh-hint')?.remove();                      // the hint has done its job
     dEl.classList.remove('dragging'); peekEl.classList.remove('dragging');
     dEl.classList.add('flying');
     setSheetX((dir > 0 ? -1 : 1) * innerWidth * 1.15, 70);         // out along the diagonal
     peekEl.style.setProperty('--peek-s', 1); peekEl.style.setProperty('--peek-o', 1); peekEl.style.setProperty('--peek-lift', '0px');
+    // everything else moves now, alongside the cards
+    clockEl.classList.remove('big'); peekEl.appendChild(clockEl);   // the clock rides in on the new card
+    activate(next);
+    reveal(byId[next], true);
+    markActive(next);
     setTimeout(() => {
-      dEl.classList.add('dragging'); setSheetX(0);                  // the top card is now the one underneath
-      select(next);
+      // the new card is exactly where the panel sits: hand its nodes over as they are
+      dEl.classList.add('dragging');
+      dEl.replaceChildren(...peekEl.childNodes);
+      setSheetX(0); dEl.scrollTop = 0;
+      peekEl.hidden = true; peekFor = null;
+      wireCard(next);
       void dEl.offsetHeight;
       dEl.classList.remove('dragging', 'flying');
-      peekEl.hidden = true; peekFor = null;
     }, 230);
   }
   let drag = null;
