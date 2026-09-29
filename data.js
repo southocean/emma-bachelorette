@@ -81,7 +81,7 @@ window.PLACES = [
     cost: '≈ €20–30 (check)', costPP: 25, time: '1 h', energy: 3,
     tags: ['60 min', 'one team of 4', 'Itis Bulevardi, 2nd floor', 'sporty clothes'],
     hours: [{ day: 'sat', open: '10:00', close: '22:00' }],
-    tips: ['Book a slot online so the four of you play together.', 'Lunch is just before: eat light.', '+358 50 375 6709 · itis@activategames.fi'],
+    tips: ['Book the 16:15 slot online so the four of you play together.', 'The sauna is straight after: pack a dry top in the backpack.', '+358 50 375 6709 · itis@activategames.fi'],
     url: 'https://playactivate.fi/en/itis',
   },
   {
@@ -192,12 +192,12 @@ window.PLACES = [
     journey: [['🧺', 'Market Square', 'east corner'], ['⛴️', 'Ferry 19', '15 min'], ['🏰', 'Suomenlinna', 'main quay']],
     schedules: [
       { day: 'sat', title: 'Sat 3 Oct · Market Square → Suomenlinna', line: '19', mode: 'ferry', rows: [
-        ['15:00', '15:15'], ['15:20', '15:35', 'ours'], ['15:40', '15:55'] ] },
+        ['13:20', '13:35', 'too soon'], ['13:40', '13:55', 'ours'], ['14:00', '14:15'] ] },
       { day: 'sat', title: 'Sat 3 Oct · Suomenlinna → Market Square', line: '19', mode: 'ferry', rows: [
-        ['16:40', '16:55'], ['17:00', '17:15', 'ours'], ['17:20', '17:35'], ['17:40', '17:55', 'latest for the sauna'] ] },
+        ['15:00', '15:15'], ['15:20', '15:35', 'ours'], ['15:40', '15:55', 'latest for Activate'] ] },
     ],
     tags: ['Old Market Hall (toilets)', 'Havis Amanda fountain', 'SkyWheel', 'Sunday: the Herring Market'],
-    tips: ['Timetable: HSL, for Sat 3 Oct 2026. Check the HSL app on the day.'],
+    tips: ['Ferry 19 runs every 20 min on Saturday afternoons; times follow that rhythm. Check the HSL app on the day.'],
     url: 'https://www.hsl.fi/en',
   },
   {
@@ -436,39 +436,39 @@ window.PLACES = [
 // schedule rows: [dep, arr, tag, line, platform, mode]
 window.TRIPS = [
   {
-    id: 'trip-sat-1', name: 'Metro to Itis', venue: 'Kamppi → Itäkeskus', cat: 'practical', virtual: true, from: 'saigonese', to: 'activate',
-    hook: 'M1 or M2 eastbound · 16 min · every ~4 min',
-    what: '', cost: 'HSL day ticket ≈ €11 (buy it now)', costPP: 0, time: '≈ 30 min door to door', energy: 1,
-    journey: [['🚶', 'Kamppi metro', '5 min walk'], ['🚇', 'M1 / M2 east', '16 min'], ['🚶', 'Itis, 2nd floor', '3 min walk']],
-    schedules: [{ day: 'sat', title: 'Metro · Kamppi → Itäkeskus', mode: 'metro', rows: [
-      ['13:05', '13:21', '', 'M2'], ['13:09', '13:25', '', 'M1'], ['13:13', '13:29', 'ours', 'M2'], ['13:17', '13:33', '', 'M1'], ['13:20', '13:36', 'latest', 'M2'] ] }],
+    id: 'trip-sat-1', name: 'Metro + ferry to Suomenlinna', venue: 'Kamppi → Helsingin yliopisto → Market Square → Suomenlinna', cat: 'practical', virtual: true, from: 'saigonese', to: 'suomenlinna',
+    hook: 'Metro 3 min, walk 7 min, ferry 15 min',
+    what: '', cost: 'HSL day ticket ≈ €11 (buy it now)', costPP: 0, time: '≈ 50 min', energy: 1,
+    journey: [['🚶', 'Kamppi metro', '5 min walk'], ['🚇', 'M1 / M2 east', '3 min'], ['🚶', 'Market Square', '7 min'], ['⛴️', 'Ferry 19', '15 min']],
+    schedules: [
+      { day: 'sat', title: 'Metro · Kamppi → Helsingin yliopisto', mode: 'metro', rows: [
+        ['13:11', '13:14', '', 'M1'], ['13:15', '13:18', 'ours', 'M2'], ['13:23', '13:26', 'latest', 'M2'] ] },
+      { day: 'sat', title: 'Ferry · Market Square → Suomenlinna', mode: 'ferry', line: '19', rows: [
+        ['13:40', '13:55', 'ours'], ['14:00', '14:15', 'if we miss it'] ] },
+    ],
+    tips: ['Get off at Helsingin yliopisto and walk down to the harbour; the ferry leaves from the east corner of Market Square.', 'Rather walk lunch off? Kamppi → Market Square is 20 min on foot.'],
+  },
+  {
+    id: 'trip-sat-2', name: 'Ferry + metro to Itis', venue: 'Suomenlinna → Market Square → Helsingin yliopisto → Itäkeskus', cat: 'practical', virtual: true, from: 'suomenlinna', to: 'activate',
+    hook: 'Ferry 15 min, walk 7 min, metro 13 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 45 min', energy: 1,
+    journey: [['⛴️', 'Ferry 19', '15 min'], ['🚶', 'Helsingin yliopisto metro', '7 min'], ['🚇', 'M1 / M2 east', '13 min'], ['🚶', 'Itis, 2nd floor', '3 min walk']],
+    schedules: [
+      { day: 'sat', title: 'Ferry · Suomenlinna → Market Square', mode: 'ferry', line: '19', rows: [
+        ['15:00', '15:15', 'if we\'re done early'], ['15:20', '15:35', 'ours'], ['15:40', '15:55', 'latest'] ] },
+      { day: 'sat', title: 'Metro · Helsingin yliopisto → Itäkeskus', mode: 'metro', rows: [
+        ['15:44', '15:57', 'ours', 'M1'], ['15:48', '16:01', '', 'M2'], ['16:00', '16:13', 'tight for 16:15', 'M2'] ] },
+    ],
     tips: ['Any eastbound train works: M1 (Vuosaari) and M2 (Mellunmäki) both stop at Itäkeskus.'],
   },
   {
-    id: 'trip-sat-2', name: 'Metro + ferry to Suomenlinna', venue: 'Itäkeskus → Helsingin yliopisto → Market Square → Suomenlinna', cat: 'practical', virtual: true, from: 'activate', to: 'suomenlinna',
-    hook: 'Metro 13 min, walk 7 min, ferry 15 min',
-    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 50 min', energy: 1,
-    journey: [['🚶', 'Itäkeskus metro', '3 min'], ['🚇', 'M1 / M2 west', '13 min'], ['🚶', 'Market Square', '7 min'], ['⛴️', 'Ferry 19', '15 min']],
-    schedules: [
-      { day: 'sat', title: 'Metro · Itäkeskus → Helsingin yliopisto', mode: 'metro', rows: [
-        ['14:55', '15:08', 'ours', 'M2'], ['14:58', '15:12', 'tight for the ferry', 'M1'] ] },
-      { day: 'sat', title: 'Ferry · Market Square → Suomenlinna', mode: 'ferry', line: '19', rows: [
-        ['15:20', '15:35', 'ours'], ['15:40', '15:55', 'if we miss it'] ] },
-    ],
-    tips: ['Get off at Helsingin yliopisto and walk down to the harbour; the ferry leaves from the east corner of Market Square.'],
-  },
-  {
-    id: 'trip-sat-3', name: 'Ferry + tram to the sauna', venue: 'Suomenlinna → Market Square → Kallio', cat: 'practical', virtual: true, from: 'suomenlinna', to: 'kotiharju',
-    hook: 'Ferry 15 min, tram 7 11 min, short walks',
-    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 40 min', energy: 1,
-    journey: [['⛴️', 'Ferry 19', '15 min'], ['🚶', 'Senaatintori stop', '3 min'], ['🚊', 'Tram 7', '11 min'], ['🚶', 'Kotiharju', '6 min from Lintulahti']],
-    schedules: [
-      { day: 'sat', title: 'Ferry · Suomenlinna → Market Square', mode: 'ferry', line: '19', rows: [
-        ['16:40', '16:55'], ['17:00', '17:15', 'ours'], ['17:20', '17:35', 'latest'] ] },
-      { day: 'sat', title: 'Tram 7 · Senaatintori → Lintulahti', mode: 'tram', line: '7', rows: [
-        ['17:22', '17:33', 'ours'], ['17:32', '17:43', 'if we\'re slow'] ] },
-    ],
-    tips: ['Metro alternative: Helsingin yliopisto → Sörnäinen, 3 min, then 5 min on foot.'],
+    id: 'trip-sat-3', name: 'Metro to the sauna', venue: 'Itäkeskus → Sörnäinen → Kallio', cat: 'practical', virtual: true, from: 'activate', to: 'kotiharju',
+    hook: 'M1 or M2 west · 9 min · then 5 min on foot',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 20 min', energy: 1,
+    journey: [['🚶', 'Itäkeskus metro', '3 min'], ['🚇', 'M1 / M2 west', '9 min'], ['🚶', 'Kotiharju', '5 min from Sörnäinen']],
+    schedules: [{ day: 'sat', title: 'Metro · Itäkeskus → Sörnäinen', mode: 'metro', rows: [
+      ['17:21', '17:30', 'ours', 'M1'], ['17:25', '17:34', '', 'M2'], ['17:29', '17:38', 'latest', 'M1'] ] }],
+    tips: ['Sweaty from the jumping is fine: shower first at Kotiharju, then the sauna.'],
   },
   {
     id: 'trip-sat-4', name: 'Metro to Quê Em', venue: 'Sörnäinen → Kamppi', cat: 'practical', virtual: true, from: 'kotiharju', to: 'queem',
@@ -543,12 +543,12 @@ window.PLAN = {
       { t: '10:30', go: 'Alko Arkadia for the bubbles (opens 9:00, closed Sunday)', icon: '🛒', place: 'alko', open: true, costPP: 4, label: 'Bubbles' },
       { t: '10:45', act: 'bauchladen', do: 'Emma sells her tray to Saturday shoppers.' },
       { t: '12:00', act: 'saigonese', do: 'Lunch at our friend\'s Vietnamese vegan kitchen.' },
-      { t: '13:05', go: 'Metro Kamppi → Itäkeskus · buy the HSL day ticket', icon: '🚇', place: 'trip-sat-1', open: true, costPP: 11, label: 'HSL day ticket' },
-      { t: '13:45', act: 'activate', do: 'One hour of Activate, the four of us as one team.' },
-      { t: '14:45', go: 'Metro + ferry to Suomenlinna', icon: '⛴️', place: 'trip-sat-2', open: true },
-      { t: '15:40', act: 'suomenlinna', do: 'Film both on the sea cliffs, then wander back.' },
-      { t: '17:00', go: 'Ferry back + tram 7 to Kallio', icon: '⛴️', place: 'trip-sat-3', open: true },
-      { t: '17:45', act: 'kotiharju', do: 'Vihta, advice and one song each for Emma.' },
+      { t: '13:05', go: 'Metro + ferry to Suomenlinna · buy the HSL day ticket', icon: '⛴️', place: 'trip-sat-1', open: true, costPP: 11, label: 'HSL day ticket' },
+      { t: '14:00', act: 'suomenlinna', do: 'Film both on the sea cliffs, then wander back.' },
+      { t: '15:20', go: 'Ferry back + metro to Itäkeskus', icon: '⛴️', place: 'trip-sat-2', open: true },
+      { t: '16:15', act: 'activate', do: 'One hour of Activate, the four of us as one team.' },
+      { t: '17:15', go: 'Metro Itäkeskus → Sörnäinen, walk to the sauna', icon: '🚇', place: 'trip-sat-3', open: true },
+      { t: '17:45', act: 'kotiharju', do: 'Straight from the jumping into the heat: vihta, advice, one song each.' },
       { t: '19:30', go: 'Metro Sörnäinen → Kamppi', icon: '🚇', place: 'trip-sat-4', open: true },
       { t: '20:00', act: 'queem', name: 'Quê Em à la carte', do: 'Dinner à la carte: a first taste before tomorrow\'s buffet.', cost: 'à la carte ≈ €15–25', costPP: 20 },
       { t: '21:35', go: 'Tram 9 to Populus, door to door', icon: '🚊', place: 'trip-sat-5', open: true },
@@ -574,7 +574,7 @@ window.PLAN = {
   },
 };
 
-// Small, cheap rituals that make the trip. Shown in the Moments tab.
+// Small, cheap rituals that make the trip. No tab of their own any more; search still finds them.
 window.MOMENTS = [
   { name: 'The champagne spray', cost: '€3–4 each', where: 'suomenlinna',
     how: 'Slow-mo, low angle, sea behind Emma. Shake ~10 s, pop up and away. Do two takes: front and from behind.' },
@@ -596,6 +596,74 @@ window.MOMENTS = [
     how: 'A shared phone album where nobody may look until Monday. Everyone is allowed only 24 photos.' },
   { name: 'The busking dare', cost: 'Free', where: 'esplanadi',
     how: 'Emma sings one song for coins on Esplanadi; the hat buys a round. Only if the mood is right.' },
+];
+
+// The packing checklist, shown in the Packing tab. One backpack each, cabin only.
+// Ticks are saved on each phone. Items: [icon, text, note?]. `shared` sections are
+// for the group: split them between us instead of packing four of each.
+window.PACKING = [
+  { title: 'Wear on the plane', note: 'The bulky things travel on you, not in the bag.', items: [
+    ['👟', 'Sneakers you can jump in and walk 15 km in', 'The only shoes: Activate, wet rock on Suomenlinna, the karaoke floor'],
+    ['🧥', 'Warm jacket that stops wind and rain', 'Early October is ≈ 5–11 °C, and the ferry and the cliffs are windy'],
+    ['👖', 'Jeans or comfy trousers'],
+    ['🧶', 'A warm jumper or fleece'],
+  ] },
+  { title: 'Clothes', items: [
+    ['👚', '2 everyday tops', 'Layer them under the jumper'],
+    ['💃', 'One going-out outfit that rolls up small', 'Sat dinner + karaoke: a dress or top that works with sneakers'],
+    ['🦵', 'Tights', 'Under the dress, and a warm layer for the island'],
+    ['🏃‍♀️', 'Sports bra + leggings', 'For Activate; the leggings double as an extra layer'],
+    ['🩲', '3 pairs of underwear'],
+    ['🧦', '3 pairs of socks, one of them warm'],
+    ['😴', 'Something to sleep in'],
+    ['🧣', 'Beanie, scarf and thin gloves', 'Small, and you will be glad of them on the cliffs'],
+  ] },
+  { title: 'Sauna', note: 'Straight from Activate to Kotiharju, so it all rides along on Saturday.', items: [
+    ['👙', 'Swimsuit', 'For cooling off outside in a towel, like the locals'],
+    ['🧖‍♀️', 'Quick-dry microfibre towel', 'Packs small, dries overnight'],
+    ['🩴', 'Flip-flops'],
+    ['🛍️', 'A plastic bag for the wet things'],
+  ] },
+  { title: 'Toiletries', note: 'Liquids in 100 ml bottles, all in one clear 1-litre bag.', items: [
+    ['🪥', 'Toothbrush + mini toothpaste'],
+    ['🧴', 'Mini shampoo, moisturiser and makeup remover', 'Check what the apartment has first'],
+    ['💄', 'A small makeup kit', 'Minis only; one palette beats five'],
+    ['🧼', 'Deodorant', 'A stick is not a liquid'],
+    ['🎀', 'Hair ties, clips and a small brush', 'Hair up for the jumping and the sauna'],
+    ['🩸', 'Period products', 'Pack them even if you think you won\'t need them'],
+    ['💊', 'Painkillers, blister plasters and your own medicine'],
+    ['👓', 'Contact lenses + case, or glasses'],
+  ] },
+  { title: 'Money, papers & tech', items: [
+    ['🪪', 'Passport or national ID card', 'A driving licence is not enough to fly'],
+    ['💳', 'Bank card, and a second one as backup', 'Tap to pay works everywhere, even on the bus'],
+    ['📱', 'HSL app installed, card added', 'Day tickets and the airport train are bought in it'],
+    ['🔋', 'Charger + a charged power bank', 'Two videos, a hundred photos and a map all day'],
+    ['🔌', 'No adapter needed', 'Finland uses the same plugs as Sweden'],
+    ['👜', 'A small crossbody bag or foldable tote', 'The backpack sleeps in a locker on Sunday, and nobody takes one to karaoke'],
+  ] },
+  { title: 'Emma\'s backpack (we pack it)', shared: true, note: 'We have the key to her place: her bag gets this whole list too, plus these.', items: [
+    ['🪪', 'Her passport or ID, in her hand, not the bag', 'Check the expiry date while you are there'],
+    ['💊', 'Her medicine, contact lenses or glasses', 'Look in the bathroom cabinet and by the bed'],
+    ['🧴', 'Her own skincare and makeup, poured into minis', 'What she actually uses, not what we would pick'],
+    ['👟', 'The sneakers she really walks in'],
+    ['💃', 'The going-out outfit she would choose herself', 'For dinner and karaoke on Saturday'],
+    ['🔌', 'A charger: the spare, not the one by her bed'],
+    ['🔑', 'Lock up and hand the key back'],
+  ] },
+  { title: 'For Emma (shared)', shared: true, note: 'One for the whole group: agree who brings what.', items: [
+    ['👰‍♀️', 'The veil (and a sash, if we do one)', 'On her from Friday night'],
+    ['🎀', 'Ribbon, a marker and a card for the tray sign', 'The shoebox lid and the stock we get in Helsinki'],
+    ['🪙', 'A few €0.50 and €1 coins', 'Change for the tray: strangers pay in coins'],
+    ['✉️', '4 envelopes and 4 pens', 'Letters to future Emma, Sunday at Café Regatta'],
+    ['🔊', 'Optional: a tiny speaker', 'For the dance video on the ramparts'],
+  ] },
+  { title: 'Leave at home', leave: true, items: [
+    ['🚫', 'Heels', 'Cobblestones, ferries and 15 000 steps'],
+    ['🚫', 'Hairdryer and straightener', 'Heavy: check what the apartment has'],
+    ['🚫', 'Full-size bottles', 'Security takes anything over 100 ml'],
+    ['🚫', 'The "just in case" outfit', 'Nobody ever wears it'],
+  ] },
 ];
 
 // Bingo. Everyone types a secret number; it seeds their own 5×5 card of 8 dares + 17 moments.

@@ -893,14 +893,39 @@
     renderDay(); drawMarkers(); drawRoute(); closeDetail();
   }
 
-  // ── moments ────────────────────────────────────────────
-  $('#moments').innerHTML = MOMENTS.map(m => `
-    <button class="moment" ${m.where ? `data-place="${m.where}"` : ''}>
-      <span class="row1"><b>${esc(m.name)}</b><span class="c">${esc(m.cost)}</span></span>
-      <p>${esc(m.how)}</p>
-    </button>`).join('');
-  $('#moments').addEventListener('click', e => {
-    const b = e.target.closest('[data-place]'); if (b) focusPlace(b.dataset.place);
+  // ── packing ────────────────────────────────────────────
+  // A checklist per phone. Ticks are keyed by section + item text, so reordering the
+  // list in data.js keeps them; "Leave at home" has nothing to tick.
+  const packEl = $('#packing');
+  let packed = new Set(store.get('emma_pack', []));
+  const packKey = (g, it) => g.title + '|' + it[1];
+  function renderPacking() {
+    const all = PACKING.filter(g => !g.leave).flatMap(g => g.items.map(it => packKey(g, it)));
+    const done = all.filter(k => packed.has(k)).length;
+    packEl.innerHTML = `
+      <div class="pack-bar"><span class="pack-count">${done === all.length ? '🎒 All packed!' : `${done} of ${all.length} packed`}</span>
+        <span class="pack-meter" aria-hidden="true"><i style="width:${Math.round(done / all.length * 100)}%"></i></span>
+        ${done ? '<button class="ghost small" id="packReset">Start over</button>' : ''}</div>` +
+      PACKING.map(g => `
+      <section class="pack-group${g.leave ? ' leave' : ''}${g.shared ? ' shared' : ''}">
+        <h3>${esc(g.title)}${g.leave ? '' : ` <span class="c">${g.items.filter(it => packed.has(packKey(g, it))).length}/${g.items.length}</span>`}</h3>
+        ${g.note ? `<p class="pack-note">${esc(g.note)}</p>` : ''}
+        <ul>${g.items.map(it => {
+          const k = packKey(g, it), on = packed.has(k);
+          const body = `<span class="pi" aria-hidden="true">${it[0]}</span><span class="pt"><b>${esc(it[1])}</b>${it[2] ? `<small>${esc(it[2])}</small>` : ''}</span>`;
+          return g.leave ? `<li>${body}</li>`
+            : `<li><button class="pack-item" data-k="${esc(k)}" aria-pressed="${on}"><span class="box" aria-hidden="true">${on ? '✓' : ''}</span>${body}</button></li>`;
+        }).join('')}</ul>
+      </section>`).join('');
+  }
+  renderPacking();
+  packEl.addEventListener('click', e => {
+    if (e.target.closest('#packReset')) { packed.clear(); store.set('emma_pack', []); renderPacking(); return; }
+    const b = e.target.closest('.pack-item'); if (!b) return;
+    const k = b.dataset.k;
+    packed.has(k) ? packed.delete(k) : packed.add(k);
+    store.set('emma_pack', [...packed]); renderPacking();
+    packEl.querySelector(`.pack-item[data-k="${CSS.escape(k)}"]`)?.focus();
   });
 
   // ── bingo ──────────────────────────────────────────────
@@ -1335,5 +1360,5 @@
   playLockup();
   if (isAdmin()) unlock(true);
   const t = isPhone() ? 'plan' : store.get('emma_tab', 'plan');
-  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' || t === 'bingo' ? 'plan' : t);
+  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' || t === 'bingo' ? 'plan' : t === 'moments' ? 'packing' : t);
 })();
