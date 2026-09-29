@@ -598,25 +598,55 @@ window.MOMENTS = [
     how: 'Emma sings one song for coins on Esplanadi; the hat buys a round. Only if the mood is right.' },
 ];
 
-// The packing checklist, shown in the Packing tab. One backpack each, cabin only.
+// Weather for the three days. The page fetches a fresh forecast from Open-Meteo
+// (free, no key) and falls back to this snapshot when it is offline.
+//   code: WMO weather code · lo/hi: °C · rain: max chance of rain, % · mm · wind: km/h
+window.WEATHER = {
+  at: '29 Sep 2026', lat: 60.17, lng: 24.94,
+  days: {
+    fri: { date: '2026-10-02', code: 45, lo: 10, hi: 15, rain: 0, mm: 0, wind: 8 },
+    sat: { date: '2026-10-03', code: 51, lo: 12, hi: 15, rain: 6, mm: 0.3, wind: 13 },
+    sun: { date: '2026-10-04', code: 51, lo: 12, hi: 15, rain: 26, mm: 0.9, wind: 20 },
+  },
+};
+
+// The packing checklist, shown in the Packing tab under the forecast. Ranked: the
+// things you cannot fix in Helsinki come first. No counts: pack what fits your bag.
 // Ticks are saved on each phone. Items: [icon, text, note?]. `shared` sections are
 // for the group: split them between us instead of packing four of each.
 window.PACKING = [
+  { title: 'Can\'t leave without', items: [
+    ['🪪', 'Passport or national ID card', 'A driving licence is not enough to fly'],
+    ['📱', 'Phone + charger', 'Maps, tickets, bingo and every photo live on it'],
+    ['💳', 'Bank card, plus a backup', 'Tap to pay works everywhere, even on the bus'],
+    ['💊', 'Your own medicine', 'In the backpack, never in a locker'],
+    ['👓', 'Contact lenses or glasses'],
+    ['🔋', 'A charged power bank', 'Filming, maps and photos all day drain a phone by dinner'],
+    ['📲', 'HSL app installed, card added', 'Day tickets and the airport train are bought in it'],
+  ] },
+  { title: 'Emma\'s backpack (we pack it)', shared: true, note: 'We have the key to her place: her bag gets this whole list too, plus these.', items: [
+    ['🪪', 'Her passport or ID, in her hand, not the bag', 'Check the expiry date while you are there'],
+    ['💊', 'Her medicine, contact lenses or glasses', 'Look in the bathroom cabinet and by the bed'],
+    ['🔌', 'A charger: the spare, not the one by her bed'],
+    ['👟', 'The sneakers she really walks in'],
+    ['💃', 'The going-out outfit she would choose herself', 'For dinner and karaoke on Saturday'],
+    ['🧴', 'Her own skincare and makeup, poured into minis', 'What she actually uses, not what we would pick'],
+    ['🔑', 'Lock up and hand the key back'],
+  ] },
   { title: 'Wear on the plane', note: 'The bulky things travel on you, not in the bag.', items: [
-    ['👟', 'Sneakers you can jump in and walk 15 km in', 'The only shoes: Activate, wet rock on Suomenlinna, the karaoke floor'],
-    ['🧥', 'Warm jacket that stops wind and rain', 'Early October is ≈ 5–11 °C, and the ferry and the cliffs are windy'],
-    ['👖', 'Jeans or comfy trousers'],
+    ['👟', 'Sneakers you can jump in and walk all day in', 'The only shoes: Activate, wet rock on Suomenlinna, the karaoke floor'],
+    ['🧥', 'A jacket that stops wind and rain', 'The ferry and the sea cliffs are windy whatever the forecast says'],
     ['🧶', 'A warm jumper or fleece'],
+    ['👖', 'Jeans or comfy trousers'],
   ] },
   { title: 'Clothes', items: [
-    ['👚', '2 everyday tops', 'Layer them under the jumper'],
-    ['💃', 'One going-out outfit that rolls up small', 'Sat dinner + karaoke: a dress or top that works with sneakers'],
-    ['🦵', 'Tights', 'Under the dress, and a warm layer for the island'],
-    ['🏃‍♀️', 'Sports bra + leggings', 'For Activate; the leggings double as an extra layer'],
-    ['🩲', '3 pairs of underwear'],
-    ['🧦', '3 pairs of socks, one of them warm'],
+    ['🩲', 'Underwear and socks'],
+    ['👚', 'Everyday tops', 'Layers beat one thick thing'],
+    ['🏃‍♀️', 'Sports bra + leggings', 'For Activate; the leggings double as a warm layer'],
+    ['💃', 'A going-out outfit that rolls up small', 'Sat dinner + karaoke: a dress or top that works with sneakers'],
     ['😴', 'Something to sleep in'],
-    ['🧣', 'Beanie, scarf and thin gloves', 'Small, and you will be glad of them on the cliffs'],
+    ['🦵', 'Tights'],
+    ['🧣', 'Beanie, scarf, thin gloves', 'Small, and welcome on the cliffs if it turns cold'],
   ] },
   { title: 'Sauna', note: 'Straight from Activate to Kotiharju, so it all rides along on Saturday.', items: [
     ['👙', 'Swimsuit', 'For cooling off outside in a towel, like the locals'],
@@ -625,44 +655,32 @@ window.PACKING = [
     ['🛍️', 'A plastic bag for the wet things'],
   ] },
   { title: 'Toiletries', note: 'Liquids in 100 ml bottles, all in one clear 1-litre bag.', items: [
-    ['🪥', 'Toothbrush + mini toothpaste'],
-    ['🧴', 'Mini shampoo, moisturiser and makeup remover', 'Check what the apartment has first'],
-    ['💄', 'A small makeup kit', 'Minis only; one palette beats five'],
+    ['🪥', 'Toothbrush + toothpaste'],
+    ['🩸', 'Period products', 'Pack them even if you think you won\'t need them'],
     ['🧼', 'Deodorant', 'A stick is not a liquid'],
     ['🎀', 'Hair ties, clips and a small brush', 'Hair up for the jumping and the sauna'],
-    ['🩸', 'Period products', 'Pack them even if you think you won\'t need them'],
-    ['💊', 'Painkillers, blister plasters and your own medicine'],
-    ['👓', 'Contact lenses + case, or glasses'],
-  ] },
-  { title: 'Money, papers & tech', items: [
-    ['🪪', 'Passport or national ID card', 'A driving licence is not enough to fly'],
-    ['💳', 'Bank card, and a second one as backup', 'Tap to pay works everywhere, even on the bus'],
-    ['📱', 'HSL app installed, card added', 'Day tickets and the airport train are bought in it'],
-    ['🔋', 'Charger + a charged power bank', 'Two videos, a hundred photos and a map all day'],
-    ['🔌', 'No adapter needed', 'Finland uses the same plugs as Sweden'],
-    ['👜', 'A small crossbody bag or foldable tote', 'The backpack sleeps in a locker on Sunday, and nobody takes one to karaoke'],
-  ] },
-  { title: 'Emma\'s backpack (we pack it)', shared: true, note: 'We have the key to her place: her bag gets this whole list too, plus these.', items: [
-    ['🪪', 'Her passport or ID, in her hand, not the bag', 'Check the expiry date while you are there'],
-    ['💊', 'Her medicine, contact lenses or glasses', 'Look in the bathroom cabinet and by the bed'],
-    ['🧴', 'Her own skincare and makeup, poured into minis', 'What she actually uses, not what we would pick'],
-    ['👟', 'The sneakers she really walks in'],
-    ['💃', 'The going-out outfit she would choose herself', 'For dinner and karaoke on Saturday'],
-    ['🔌', 'A charger: the spare, not the one by her bed'],
-    ['🔑', 'Lock up and hand the key back'],
+    ['🩹', 'Painkillers and blister plasters'],
+    ['🧴', 'Shampoo, moisturiser, makeup remover', 'Minis; check what the apartment has first'],
+    ['💄', 'Makeup', 'Minis; one palette beats five'],
   ] },
   { title: 'For Emma (shared)', shared: true, note: 'One for the whole group: agree who brings what.', items: [
     ['👰‍♀️', 'The veil (and a sash, if we do one)', 'On her from Friday night'],
+    ['✉️', 'Envelopes and pens, one each', 'Letters to future Emma, Sunday at Café Regatta'],
     ['🎀', 'Ribbon, a marker and a card for the tray sign', 'The shoebox lid and the stock we get in Helsinki'],
-    ['🪙', 'A few €0.50 and €1 coins', 'Change for the tray: strangers pay in coins'],
-    ['✉️', '4 envelopes and 4 pens', 'Letters to future Emma, Sunday at Café Regatta'],
+    ['🪙', 'Some €0.50 and €1 coins', 'Change for the tray: strangers pay in coins'],
     ['🔊', 'Optional: a tiny speaker', 'For the dance video on the ramparts'],
   ] },
+  { title: 'Nice to have', items: [
+    ['👜', 'A small crossbody bag or foldable tote', 'The backpack sleeps in a locker on Sunday, and nobody takes one to karaoke'],
+    ['🎧', 'Earbuds', 'For the flight'],
+    ['☂️', 'A small umbrella', 'Only if the forecast above shows rain'],
+  ] },
   { title: 'Leave at home', leave: true, items: [
-    ['🚫', 'Heels', 'Cobblestones, ferries and 15 000 steps'],
+    ['🚫', 'Heels', 'Cobblestones, ferries and a lot of walking'],
     ['🚫', 'Hairdryer and straightener', 'Heavy: check what the apartment has'],
     ['🚫', 'Full-size bottles', 'Security takes anything over 100 ml'],
     ['🚫', 'The "just in case" outfit', 'Nobody ever wears it'],
+    ['🔌', 'Plug adapters', 'Finland uses the same plugs as Sweden'],
   ] },
 ];
 

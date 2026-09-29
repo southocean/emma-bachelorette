@@ -624,11 +624,66 @@
   rEl.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (li) pickResult(li.dataset.id); });
   qClear.onclick = () => { qEl.value = ''; qClear.hidden = true; closeResults(); qEl.focus(); };
 
+  // ── weather ────────────────────────────────────────────
+  // The snapshot in data.js shows at once; a fresh Open-Meteo forecast replaces it when
+  // it arrives, and is kept on the phone for the next time there is no signal.
+  const WX_CODES = [
+    [[0], '☀️', 'Sunny'], [[1], '🌤️', 'Mostly sunny'], [[2], '⛅', 'Partly cloudy'], [[3], '☁️', 'Cloudy'],
+    [[45, 48], '🌫️', 'Fog'], [[51, 53, 55, 56, 57], '🌦️', 'Drizzle'], [[61, 63, 66, 80, 81], '🌧️', 'Rain'],
+    [[65, 67, 82], '🌧️', 'Heavy rain'], [[71, 73, 75, 77, 85, 86], '🌨️', 'Snow'], [[95, 96, 99], '⛈️', 'Thunder'],
+  ];
+  const wxLook = code => { const m = WX_CODES.find(([cs]) => cs.includes(code)) || [, '🌡️', '']; return { icon: m[1], text: m[2] }; };
+  let wx = store.get('emma_wx', null);
+  if (!wx || !wx.days || Object.keys(WEATHER.days).some(k => !wx.days[k])) wx = WEATHER;
+  const wxRain = w => w.rain >= 20; // below this the % is noise, so it stays off the buttons
+  const wxShort = w => `<span>${wxLook(w.code).icon} ${Math.round(w.lo)}–${Math.round(w.hi)}°</span>${wxRain(w) ? ` <span>💧${w.rain}%</span>` : ''}`;
+  const wxLong = w => `${wxLook(w.code).text} · ${Math.round(w.lo)}–${Math.round(w.hi)} °C · ${w.rain}% chance of rain · wind up to ${Math.round(w.wind)} km/h`;
+  async function fetchWeather() {
+    const ks = Object.keys(WEATHER.days), dates = ks.map(k => WEATHER.days[k].date);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER.lat}&longitude=${WEATHER.lng}`
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max'
+      + `&timezone=Europe%2FHelsinki&start_date=${dates[0]}&end_date=${dates[dates.length - 1]}`;
+    try {
+      const r = await fetch(url); if (!r.ok) return;
+      const d = (await r.json()).daily, days = {};
+      ks.forEach(k => {
+        const i = d.time.indexOf(WEATHER.days[k].date); if (i < 0 || d.weather_code[i] == null) return;
+        days[k] = { date: d.time[i], code: d.weather_code[i], lo: d.temperature_2m_min[i], hi: d.temperature_2m_max[i],
+          rain: d.precipitation_probability_max[i] ?? 0, mm: d.precipitation_sum[i] ?? 0, wind: d.wind_speed_10m_max[i] ?? 0 };
+      });
+      if (Object.keys(days).length !== ks.length) return;
+      wx = { at: new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Helsinki' }), days };
+      store.set('emma_wx', wx);
+      renderDays(); renderForecast();
+    } catch {}
+  }
+  function renderForecast() {
+    const ds = Object.entries(wx.days), all = ds.map(([, w]) => w);
+    const lo = Math.round(Math.min(...all.map(w => w.lo))), hi = Math.round(Math.max(...all.map(w => w.hi)));
+    const wet = all.some(wxRain), windy = all.some(w => w.wind >= 25);
+    const tip = [lo <= 5 ? 'Cold for October: pack the beanie and gloves.' : hi >= 15 ? 'Mild for October: layers beat a big coat.' : 'Typical October: layers and a warm jacket.',
+      wet ? 'Some rain likely: a rain layer earns its place.' : 'Little rain in sight.',
+      windy ? 'Windy by the sea.' : ''].filter(Boolean).join(' ');
+    $('#forecast').innerHTML = `
+      <section class="wx">
+        <div class="wx-days">${ds.map(([k, w]) => `
+          <div class="wx-day" title="${esc(wxLong(w))}"><b>${esc(PLAN[k].label.split(' ')[0])}</b>
+            <span class="wx-ic" aria-hidden="true">${wxLook(w.code).icon}</span>
+            <span class="wx-t">${Math.round(w.lo)}–${Math.round(w.hi)}°</span>
+            <span class="wx-r">${wxRain(w) ? `💧 ${w.rain}%` : wxLook(w.code).text}</span></div>`).join('')}</div>
+        <p class="wx-tip">${esc(tip)}</p>
+        <p class="wx-src">Helsinki forecast, updated ${esc(wx.at)} · Open-Meteo</p>
+      </section>`;
+  }
+
   // ── plan tab ───────────────────────────────────────────
   const daysEl = $('#days'), timesEl = $('#times');
   function renderDays() {
-    daysEl.innerHTML = Object.entries(P).map(([k, d]) =>
-      `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"><b>${esc(d.label)}</b><span>${esc(d.title)} · ≈ €${Math.round(dayCost(k))}</span></button>`).join('')
+    daysEl.innerHTML = Object.entries(P).map(([k, d]) => {
+      const w = wx.days[k];
+      return `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"${w ? ` title="${esc(wxLong(w))}"` : ''}><b>${esc(d.label)}</b>`
+        + `<span class="dsub">${w ? `<span class="dwx">${wxShort(w)}</span>` : ''}<span class="dcost">≈ €${Math.round(dayCost(k))}</span></span></button>`;
+    }).join('')
       + (isAdmin() ? `<button class="secret-toggle" id="secretToggle" aria-pressed="${secretOn}" title="${secretOn ? 'Showing the secret plan: click for the public one' : 'Show the secret plan'}" aria-label="Secret plan">🤫</button>` : '');
     daysEl.classList.toggle('secret', secretOn);
     document.documentElement.classList.toggle('secret-plan', secretOn);
@@ -918,7 +973,7 @@
         }).join('')}</ul>
       </section>`).join('');
   }
-  renderPacking();
+  renderPacking(); renderForecast(); fetchWeather();
   packEl.addEventListener('click', e => {
     if (e.target.closest('#packReset')) { packed.clear(); store.set('emma_pack', []); renderPacking(); return; }
     const b = e.target.closest('.pack-item'); if (!b) return;
