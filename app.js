@@ -658,12 +658,7 @@
     } catch {}
   }
   function renderForecast() {
-    const ds = Object.entries(wx.days), all = ds.map(([, w]) => w);
-    const lo = Math.round(Math.min(...all.map(w => w.lo))), hi = Math.round(Math.max(...all.map(w => w.hi)));
-    const wet = all.some(wxRain), windy = all.some(w => w.wind >= 25);
-    const tip = [lo <= 5 ? 'Cold for October: pack the beanie and gloves.' : hi >= 15 ? 'Mild for October: layers beat a big coat.' : 'Typical October: layers and a warm jacket.',
-      wet ? 'Some rain likely: a rain layer earns its place.' : 'Little rain in sight.',
-      windy ? 'Windy by the sea.' : ''].filter(Boolean).join(' ');
+    const ds = Object.entries(wx.days);
     $('#forecast').innerHTML = `
       <section class="wx">
         <div class="wx-days">${ds.map(([k, w]) => `
@@ -671,8 +666,6 @@
             <span class="wx-ic" aria-hidden="true">${wxLook(w.code).icon}</span>
             <span class="wx-t">${Math.round(w.lo)}–${Math.round(w.hi)}°</span>
             <span class="wx-r">${wxRain(w) ? `💧 ${w.rain}%` : wxLook(w.code).text}</span></div>`).join('')}</div>
-        <p class="wx-tip">${esc(tip)}</p>
-        <p class="wx-src">Helsinki forecast, updated ${esc(wx.at)} · Open-Meteo</p>
       </section>`;
   }
 
