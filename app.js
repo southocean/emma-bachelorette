@@ -960,7 +960,7 @@
         ${g.note ? `<p class="pack-note">${esc(g.note)}</p>` : ''}
         <ul>${g.items.map(it => {
           const k = packKey(g, it), on = packed.has(k);
-          const body = `<span class="pi" aria-hidden="true">${it[0]}</span><span class="pt"><b>${esc(it[1])}</b>${it[2] ? `<small>${esc(it[2])}</small>` : ''}</span>`;
+          const body = `<span class="pi" aria-hidden="true">${it[0]}</span><span class="pt"><b>${esc(it[1]).replace(/ (\([^)]*\))$/, ' <span class="pp">$1</span>')}</b>${it[2] ? `<small>${esc(it[2])}</small>` : ''}</span>`;
           return g.leave ? `<li>${body}</li>`
             : `<li><button class="pack-item" data-k="${esc(k)}" aria-pressed="${on}"><span class="box" aria-hidden="true">${on ? '✓' : ''}</span>${body}</button></li>`;
         }).join('')}</ul>
