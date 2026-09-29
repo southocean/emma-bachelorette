@@ -682,7 +682,7 @@
     daysEl.innerHTML = Object.entries(P).map(([k, d]) => {
       const w = wx.days[k];
       return `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"${w ? ` title="${esc(wxLong(w))}"` : ''}><b>${esc(d.label)}</b>`
-        + `<span class="dsub">${w ? `<span class="dwx">${wxShort(w)}</span>` : ''}<span class="dcost">≈ €${Math.round(dayCost(k))}</span></span></button>`;
+        + `<span class="dsub">${w ? `<span class="dwx">${wxShort(w)}</span>` : ''}</span></button>`;
     }).join('')
       + (isAdmin() ? `<button class="secret-toggle" id="secretToggle" aria-pressed="${secretOn}" title="${secretOn ? 'Showing the secret plan: click for the public one' : 'Show the secret plan'}" aria-label="Secret plan">🤫</button>` : '');
     daysEl.classList.toggle('secret', secretOn);
