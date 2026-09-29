@@ -616,7 +616,7 @@ window.WEATHER = {
 // for the group: split them between us instead of packing four of each.
 window.PACKING = [
   { title: 'Can\'t leave without', items: [
-    ['🪪', 'Passport'],
+    ['🪪', 'Passport + permit'],
     ['📱', 'Phone + charger + power bank'],
     ['💳', 'Bank card'],
     ['💊', 'Any medicine'],
