@@ -80,6 +80,8 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; letter-s
 .fine { color: var(--ink-2); font-size: 13px; }
 .ghost { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 999px; }
 
+.pin.home-pin { background: var(--surface); border: 2px solid var(--ink); font-size: 15px; }
+
 /* days */
 .days { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 6px; }
 .secret-toggle {

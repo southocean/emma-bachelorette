@@ -58,13 +58,16 @@
   }
   indexPlan();
   // transit directions for a transfer card: from its start activity to its end one
-  const GDIR = p => { const f = byId[p.from], t = byId[p.to]; return f && t ? `https://www.google.com/maps/dir/?api=1&origin=${f.lat},${f.lng}&destination=${t.lat},${t.lng}&travelmode=transit` : 'https://www.google.com/maps'; };
-  const GMAP = p => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+  // Google Maps opens the real place (name + street address from data.js), not a bare coordinate
+  const GQ = p => encodeURIComponent(p.gq || `${p.lat},${p.lng}`);
+  const GDIR = p => { const f = byId[p.from], t = byId[p.to]; return f && t ? `https://www.google.com/maps/dir/?api=1&origin=${GQ(f)}&destination=${GQ(t)}&travelmode=transit` : 'https://www.google.com/maps'; };
+  const GMAP = p => `https://www.google.com/maps/search/?api=1&query=${GQ(p)}`;
   const PIN_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>';
 
   function iconFor(p, day) {
     const hits = planIndex[p.id] || [];
     const hit = hits.find(h => h.day === day) || null;
+    if (p.always) return L.divIcon({ className: '', html: '<div class="pin home-pin" aria-hidden="true">🏠</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
     if (hit) {
       const nums = hits.filter(h => h.day === day).map(h => h.n).join('·');
       return L.divIcon({ className: '', html: `<div class="pin" style="background:${DAYC[day]}">${nums}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
@@ -102,13 +105,13 @@
   let day = 'sat';
   let route;
   function drawMarkers() {
-    secretPlaces.forEach(p => { if (!secretOn) markers[p.id].remove(); });
+    secretPlaces.forEach(p => { if (!secretOn && markers[p.id]) markers[p.id].remove(); });
     allPlaces().filter(p => markers[p.id]).forEach(p => {
       const inDay = (planIndex[p.id] || []).some(h => h.day === day);
-      const show = inDay || on[p.cat];
+      const show = inDay || on[p.cat] || p.always; // home base shows on every day, whatever the filters
       const m = markers[p.id];
       m.setIcon(iconFor(p, day));
-      m.setZIndexOffset(inDay ? 1000 : 0);
+      m.setZIndexOffset(inDay || p.always ? 1000 : 0);
       if (show) m.addTo(map); else m.remove();
     });
     if (sel && markers[sel]) markers[sel].getElement()?.classList.add('sel');
@@ -1283,7 +1286,7 @@
     window.SECRET_PLAN = data.secretPlan || null;
     if (!secretPlaces.length) { // register once, even if the gate is opened again
       secretPlaces = (data.secretPlaces || []).filter(p => p && p.id && !byId[p.id]);
-      secretPlaces.forEach(p => { p.tips ||= []; p.cat = CATS[p.cat] ? p.cat : 'make'; byId[p.id] = p; addMarker(p); });
+      secretPlaces.forEach(p => { p.tips ||= []; p.cat = CATS[p.cat] ? p.cat : 'make'; byId[p.id] = p; if (!p.virtual) addMarker(p); }); // secret transfers get a card, not a pin
     }
     let wasOn = false;
     try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
