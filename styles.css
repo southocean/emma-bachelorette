@@ -39,7 +39,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: var(--accent); }
-button { font: inherit; color: inherit; cursor: pointer; }
+button { font: inherit; color: inherit; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.actions a { -webkit-user-select: none; user-select: none; }
 h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; letter-spacing: -.01em; margin: 0; }
 
 .app { display: grid; grid-template-columns: 420px 1fr; grid-template-rows: auto 1fr; grid-template-areas: "brand map" "side map"; height: 100vh; height: 100dvh; }
@@ -84,13 +85,6 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; letter-s
 
 /* days */
 .days { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 6px; }
-.secret-toggle {
-  border: 1px solid var(--line); background: var(--surface); border-radius: 12px; width: 42px; font-size: 18px;
-  opacity: .35; filter: grayscale(1); transition: opacity .15s, filter .15s;
-}
-.secret-toggle:hover { opacity: .6; }
-.secret-toggle[aria-pressed="true"] { opacity: 1; filter: none; border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
-.days.secret button[data-day] { border-style: dashed; }
 .days[hidden] { display: none; }
 .days button {
   border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 6px; text-align: left;
@@ -548,9 +542,9 @@ dialog#gate::backdrop { background: rgba(10, 12, 18, .55); backdrop-filter: blur
   .go.sel .go-open { background: color-mix(in srgb, var(--dc) 12%, var(--surface)); border-color: var(--dc); border-style: solid; }
 }
 
-/* ── day colours: Saturday and Sunday share the pink; blue is the secret plan's ── */
+/* ── day colours: the trip as it happened is pink; the original plan (📜) is blue ── */
 :root { --d-fri: var(--fri); --d-sat: var(--sat); --d-sun: var(--sat); }
-:root.secret-plan { --d-fri: var(--secret); --d-sat: var(--secret); --d-sun: var(--secret); }
+:root.original { --d-fri: var(--secret); --d-sat: var(--secret); --d-sun: var(--secret); }
 
 /* ── map layout: day bar + search share the top row; category chips at the bottom ── */
 .times { top: 12px; height: 40px; box-sizing: border-box; padding: 4px 10px 0; }
@@ -771,7 +765,6 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
   .mdays-slot .days button[data-day] { height: auto; min-height: 40px; padding: 4px 6px; }
   .mdays-slot .days button[data-day] .dwx { font-size: 11px; white-space: nowrap; }
   .mdays-slot .days button[data-day] b { font-size: 13.5px; }
-  .mdays-slot .secret-toggle { flex: none; width: 44px; height: 40px; }
 
   /* the day bar is always open on a phone: no thin state */
   .times, .times:hover, .times.quiet:hover { height: 48px; }
@@ -901,3 +894,142 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 
 /* belt and braces: whatever else is on the card, 'dragging' means no transition */
 .detail.dragging, .detail.flying.dragging { transition: none !important; }
+
+/* ── the 📜 button: the trip as it happened ⇄ the original plan ── */
+.mode {
+  margin-left: auto; flex: none; width: 36px; height: 36px; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 50%; font-size: 18px; line-height: 1; cursor: pointer;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.mode:hover { border-color: var(--secret); }
+.mode[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--secret) 18%, var(--surface)); border-color: var(--secret);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--secret) 25%, transparent);
+}
+/* each mode has its own tabs */
+:root:not(.original) .tabs [data-mode="original"], :root.original .tabs [data-mode="actual"] { display: none; }
+:root.original .tabs button[aria-selected="true"] { border-color: var(--secret); }
+
+/* ── media: the strip on a card ── */
+.mc { position: relative; margin: 2px 0 12px; }
+.mc-track {
+  position: relative; display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory;
+  scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; border-radius: 12px;
+}
+.mc-track::-webkit-scrollbar { display: none; }
+.mc-slide {
+  position: relative; flex: 0 0 100%; height: 200px; padding: 0; border: 0; border-radius: 12px; overflow: hidden;
+  background: var(--surface-2); scroll-snap-align: start; cursor: zoom-in;
+}
+.mc.many .mc-slide { flex-basis: 86%; } /* the next one peeks in: there is more */
+.mc-slide img, .mc-slide video, .gal-item img, .gal-item video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mc-play {
+  position: absolute; inset: 0; margin: auto; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .45); color: #fff; font-size: 16px; pointer-events: none;
+}
+.mc-count {
+  position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  background: rgba(0, 0, 0, .5); color: #fff; font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.mc-dots { display: flex; justify-content: center; gap: 5px; margin-top: 7px; }
+.mc-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
+.mc-dots i.on { background: var(--dc, var(--accent)); transform: scale(1.25); }
+.mc-nav {
+  position: absolute; top: 100px; transform: translateY(-50%); width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(0, 0, 0, .5); color: #fff; font-size: 22px; line-height: 1; opacity: 0; transition: opacity .15s;
+}
+.mc-prev { left: 8px; } .mc-next { right: 8px; }
+.mc:hover .mc-nav, .mc-nav:focus-visible { opacity: 1; }
+.mc .mc-nav:disabled { opacity: 0; pointer-events: none; }
+@media (pointer: coarse) { .mc-nav { display: none; } } /* fingers swipe */
+
+/* ── the viewer: full screen, swipe between photos, Save at the bottom ── */
+.viewer {
+  width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: rgba(0, 0, 0, .78); color: #fff; overflow: hidden;
+}
+.viewer::backdrop { background: transparent; }
+.vw-track { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
+.vw-track::-webkit-scrollbar { display: none; }
+.vw-slide {
+  flex: 0 0 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  scroll-snap-align: center; scroll-snap-stop: always; padding: 60px 0 88px; cursor: zoom-out;
+}
+.vw-slide img, .vw-slide video { cursor: auto; display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.vw-x, .vw-nav, .vw-save { position: absolute; border: 0; color: #fff; cursor: pointer; }
+.vw-x { top: calc(10px + env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .14); font-size: 18px; }
+.vw-count { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.vw-nav { top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, .14); font-size: 26px; line-height: 1; }
+.vw-nav:disabled { opacity: 0; pointer-events: none; }
+.vw-prev { left: 14px; } .vw-next { right: 14px; }
+.viewer.single .vw-nav, .viewer.single .vw-thumbs { display: none; }
+.viewer:not(.single) .vw-slide { padding-bottom: 156px; }
+.vw-cap { position: absolute; top: calc(38px + env(safe-area-inset-top)); left: 60px; right: 60px; text-align: center; font-size: 12.5px; color: rgba(255, 255, 255, .75); pointer-events: none; }
+.vw-thumbs {
+  position: absolute; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 6px;
+  padding: 0 12px; overflow-x: auto; scrollbar-width: none; justify-content: safe center;
+}
+.vw-thumbs::-webkit-scrollbar { display: none; }
+.vw-thumbs button {
+  flex: none; width: 54px; height: 54px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden;
+  background: #222; opacity: .55; cursor: pointer; transition: opacity .15s, border-color .15s;
+}
+.vw-thumbs button.on { opacity: 1; border-color: #fff; }
+.vw-thumbs img, .vw-thumbs video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.viewer:not(.single) .vw-save { bottom: calc(82px + env(safe-area-inset-bottom)); }
+.vw-thumbs:has(button:only-child) { display: none; }
+.vw-save {
+  left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 999px;
+  background: #fff; color: #111; font: 700 14px/1 'DM Sans', system-ui, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, .4);
+}
+@media (pointer: coarse) { .vw-nav { display: none; } } /* fingers swipe */
+
+/* ── gallery: the trip as a storyline, a row of thumbnails per activity ── */
+.st-group { margin-bottom: 16px; }
+.st-head {
+  display: flex; flex-direction: column; align-items: flex-start; width: 100%; padding: 0 0 6px; margin: 0;
+  border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink);
+}
+.st-when { font-size: 12px; font-weight: 700; color: var(--dc); }
+.st-head b { font-family: 'Fraunces', Georgia, serif; font-size: 16px; }
+.st-head:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.gal { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.folded .gal-item:nth-child(n+6) { display: none; }
+.gal-more > span { display: none; }
+.folded .gal-more { cursor: pointer; }
+.folded .gal-more > span {
+  position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .5);
+  color: #fff; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.gal-item { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+.empty { color: var(--ink-2); font-size: 14px; text-align: center; padding: 24px 0; margin: 0; }
+
+/* ── swish ── */
+.pc { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--ink); }
+.pc::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); flex: none; }
+.sw-pay { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; margin-bottom: 10px; }
+.sw-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sw-row:last-child { border-bottom: 0; }
+.sw-arrow { color: var(--ink-2); }
+.sw-row b { margin-left: auto; font-size: 15px; font-variant-numeric: tabular-nums; }
+.sw-kr { min-width: 64px; text-align: right; color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+.sw-square { margin: 10px 0; font-weight: 700; text-align: center; }
+.sw-people { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+.sw-p { border-radius: 10px; padding: 6px 4px; text-align: center; background: color-mix(in srgb, var(--pc) 12%, var(--surface)); border-top: 3px solid var(--pc); }
+.sw-p b { display: block; font-size: 12.5px; }
+.sw-p span { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.sw-bills { list-style: none; margin: 0; padding: 0; }
+.sw-bills li {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; margin-bottom: 6px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--pc);
+}
+.sw-bills .pc { min-width: 58px; }
+.sw-what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sw-what b { font-size: 14px; font-weight: 600; }
+.sw-what small { font-size: 12px; color: var(--ink-2); }
+.sw-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sw-photo { flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; cursor: zoom-in; background: var(--surface-2); }
+.sw-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.brand { gap: 10px; }
+.brand > div { flex: 1 1 auto; min-width: 0; }

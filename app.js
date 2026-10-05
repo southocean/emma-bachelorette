@@ -2,7 +2,7 @@
   'use strict';
   const $ = (s, el = document) => el.querySelector(s);
   const byId = Object.fromEntries(PLACES.map(p => [p.id, p]));
-  // day colours go through --d-*, so secret mode can repaint every day blue in one place
+  // day colours go through --d-*, so the original plan can repaint every day blue in one place
   const DAYC = { fri: 'var(--d-fri)', sat: 'var(--d-sat)', sun: 'var(--d-sun)' };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const store = {
@@ -39,10 +39,10 @@
   }).addTo(map);
 
   const markers = {};
-  // P is the plan on screen: the public PLAN, or Nam's secret plan when admin mode has it on.
-  // Surprise places from the secret plan only exist on the map while it is on.
-  let P = PLAN, secretOn = false, secretPlaces = [];
-  const allPlaces = () => secretOn ? PLACES.concat(secretPlaces) : PLACES;
+  // Two modes for the whole site: the trip as it happened (ACTUAL, the default, pink) and
+  // the original plan (PLAN, blue), switched by the 📜 button in the header.
+  let original = false;
+  let P = ACTUAL;
   const planIndex = {}; // activity id -> [{day, n}]
   const goIndex = {};   // logistics place id -> [day]
   function indexPlan() {
@@ -105,8 +105,7 @@
   let day = 'sat';
   let route;
   function drawMarkers() {
-    secretPlaces.forEach(p => { if (!secretOn && markers[p.id]) markers[p.id].remove(); });
-    allPlaces().filter(p => markers[p.id]).forEach(p => {
+    PLACES.filter(p => markers[p.id]).forEach(p => {
       const inDay = (planIndex[p.id] || []).some(h => h.day === day);
       const show = inDay || on[p.cat] || p.always; // home base shows on every day, whatever the filters
       const m = markers[p.id];
@@ -190,6 +189,7 @@
       <h2>${esc(p.name)}</h2>
       ${p.venue ? `<p class="venue">${PIN_SVG}${esc(p.venue)}</p>` : ''}
       <p class="hook">${esc(p.hook)}</p>
+      ${carouselHTML(mediaOf(p))}
       <dl class="facts">
         <div><dt>Budget / person</dt><dd>${esc(p.cost)}</dd></div>
         <div><dt>Time</dt><dd>${esc(p.time)}</dd></div>
@@ -446,7 +446,7 @@
   dEl.addEventListener('touchstart', e => {
     if (!isPhone() || dEl.hidden || e.touches.length > 1) return;
     const t = e.touches[0];
-    drag = { x0: t.clientX, y0: t.clientY, t0: performance.now(), axis: null,
+    drag = { x0: t.clientX, y0: t.clientY, t0: performance.now(), axis: null, inStrip: !!e.target.closest('.mc-track'),
       y: parseFloat(dEl.style.getPropertyValue('--sheet-y')) || 0, scrolled: dEl.scrollTop > 0 };
   }, { passive: true });
   dEl.addEventListener('touchmove', e => {
@@ -456,6 +456,7 @@
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       // a thumb swipes on a diagonal: anything flatter than ~55° counts as sideways
       drag.axis = Math.abs(dx) > Math.abs(dy) * .7 ? 'x' : 'y';
+      if (drag.axis === 'x' && drag.inStrip) { drag = null; return; } // a sideways swipe on the photos is theirs
     }
     if (drag.axis === 'x') {
       e.preventDefault();
@@ -508,7 +509,7 @@
   map.on('click', () => { closeDetail(); closeResults(); hideTip(); });
   map.on('mousedown', () => hideTip());
   addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
+    if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return; // a dialog closes itself first
     if (!dEl.hidden) dismissCard(); else if (resultsOpen) closeResults();
   });
 
@@ -530,8 +531,8 @@
     name: fold(p.name + (p.venue ? ' ' + p.venue : '')),
     hook: fold(p.hook),
     rest: fold([p.what, p.tips.join(' '), p.cost, CATS[p.cat].label, (momentsAt[p.id] || []).join(' '),
-      Object.values(PLAN).flatMap(d => d.steps).filter(s => s.act === p.id && s.name).map(s => s.name).join(' '),
-      (planIndex[p.id] || []).map(h => PLAN[h.day].label).join(' ') || (goIndex[p.id] ? 'logistics' : 'alternative')].join(' ')),
+      [PLAN, ACTUAL].flatMap(pl => Object.values(pl)).flatMap(d => d.steps).filter(s => s.act === p.id && s.name).map(s => s.name).join(' '),
+      (planIndex[p.id] || []).map(h => P[h.day].label).join(' ') || (goIndex[p.id] ? 'logistics' : 'alternative')].join(' ')),
   }));
   const qEl = $('#q'), rEl = $('#results'), qClear = $('#qClear');
   let resultsOpen = false, active = -1, shown = [];
@@ -679,29 +680,17 @@
       const w = wx.days[k];
       return `<button data-day="${k}" style="--dc:${DAYC[k]}" aria-pressed="${k === day}"${w ? ` title="${esc(wxLong(w))}"` : ''}><b>${esc(d.label)}</b>`
         + `<span class="dsub">${w ? `<span class="dwx">${wxShort(w)}</span>` : ''}</span></button>`;
-    }).join('')
-      + (isAdmin() ? `<button class="secret-toggle" id="secretToggle" aria-pressed="${secretOn}" title="${secretOn ? 'Showing the secret plan: click for the public one' : 'Show the secret plan'}" aria-label="Secret plan">🤫</button>` : '');
-    daysEl.classList.toggle('secret', secretOn);
-    document.documentElement.classList.toggle('secret-plan', secretOn);
+    }).join('');
   }
   daysEl.addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    if (b.id === 'secretToggle') setSecret(!secretOn);
-    else setDay(b.dataset.day);
+    const b = e.target.closest('button[data-day]'); if (b) setDay(b.dataset.day);
   });
-  function setSecret(v) {
-    secretOn = v && isAdmin();
-    try { sessionStorage.setItem('emma_secret', secretOn ? '1' : '0'); } catch {}
-    P = secretOn && window.SECRET_PLAN ? window.SECRET_PLAN : PLAN;
-    if (!P[day]) day = 'sat';
-    indexPlan(); renderDays(); setDay(day); renderBudget();
-  }
 
   function stepCost(s) {
     if (s.costPP != null) return s.costPP;
     return s.act && byId[s.act] ? byId[s.act].costPP : 0;
   }
-  function dayCost(k) { return P[k].steps.reduce((sum, s) => sum + stepCost(s), 0); }
+  const dayCost = (k, plan = P) => plan[k].steps.reduce((sum, s) => sum + stepCost(s), 0);
 
   function renderDay() {
     const d = P[day];
@@ -716,7 +705,7 @@
           : `<li class="go">${txt}</li>`;
       }
       const p = byId[s.act];
-      if (!p) return ''; // a secret-plan step pointing at a place that is not defined
+      if (!p) return ''; // a step pointing at a place that is not defined
       // consecutive activities with no logistics line between them get a walking estimate
       const walk = prevAct && !goSince && prevAct.id !== p.id
         ? `<li class="go"><span class="gi" aria-hidden="true">🚶</span><span class="gt">${howFar(prevAct, p)}</span></li>` : '';
@@ -979,18 +968,231 @@
     packEl.querySelector(`.pack-item[data-k="${CSS.escape(k)}"]`)?.focus();
   });
 
+  // ── media: a carousel on a card, the Gallery, a full-screen viewer ──
+  // A place's `media` (data.js) is the one list behind all three: the card shows it as a
+  // swipeable strip under the hook (the next photo peeks in; dots + a counter), the Gallery
+  // shows it as that activity's row of square thumbnails, and a tap on either opens the
+  // viewer: full screen, swipe or arrows, a strip of thumbnails at the bottom, Save.
+  const isVideo = m => m.type === 'video' || /\.(mp4|webm|mov|m4v)$/i.test(m.src);
+  // tools/media.py writes media/<id>/thumbs/<name> next to each photo
+  const thumbOf = src => src.replace(/^(media\/(?:.+\/)?)([^/]+)$/, '$1thumbs/$2');
+  const mediaOf = x => ((x && x.media) || []).map(m => typeof m === 'string' ? { src: m } : m)
+    .filter(m => m && m.src).map(m => ({ ...m, thumb: m.thumb || (isVideo(m) ? '' : thumbOf(m.src)) }));
+  const fullHTML = m => isVideo(m)
+    ? `<video src="${esc(m.src)}#t=0.1" muted playsinline preload="metadata"></video><span class="mc-play" aria-hidden="true">▶</span>`
+    : `<img src="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" decoding="async">`;
+  // a square thumbnail, or the photo itself (cropped by CSS) if there is no thumbnail file
+  const thumbHTML = m => isVideo(m) ? fullHTML(m)
+    : `<img src="${esc(m.thumb || m.src)}" data-full="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=this.dataset.full">`;
+  const mediaAttr = list => `data-media="${esc(JSON.stringify(list))}"`;
+  function carouselHTML(list) {
+    if (!list.length) return '';
+    const many = list.length > 1;
+    return `<div class="mc${many ? ' many' : ''}" ${mediaAttr(list)}>
+      <div class="mc-track">${list.map((m, i) => `<button class="mc-slide" data-i="${i}" aria-label="Photo ${i + 1} of ${list.length}">${fullHTML(m)}</button>`).join('')}</div>
+      ${many ? `<span class="mc-count">1 / ${list.length}</span><div class="mc-dots" aria-hidden="true">${list.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
+      <button class="mc-nav mc-prev" data-d="-1" aria-label="Previous photo" disabled>‹</button><button class="mc-nav mc-next" data-d="1" aria-label="Next photo">›</button>` : ''}
+    </div>`;
+  }
+  // which slide a strip is on: the one whose left edge is nearest the scroll position
+  const mcIndex = tr => {
+    const slides = [...tr.children], off = s => Math.abs(s.offsetLeft - tr.scrollLeft);
+    return slides.reduce((best, s, k) => off(s) < off(slides[best]) ? k : best, 0);
+  };
+  document.addEventListener('scroll', e => {
+    const tr = e.target;
+    if (!(tr instanceof Element) || !tr.classList.contains('mc-track')) return;
+    const i = mcIndex(tr), n = tr.children.length;
+    const mc = tr.closest('.mc'), count = mc.querySelector('.mc-count');
+    if (count) count.textContent = `${i + 1} / ${n}`;
+    mc.querySelectorAll('.mc-dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    const prev = mc.querySelector('.mc-prev'), next = mc.querySelector('.mc-next');
+    if (prev) { prev.disabled = i === 0; next.disabled = i === n - 1; }
+  }, true);
+  // a mouse can't swipe: arrows on the strip, and ← → while a card is open
+  function mcStep(mc, d) {
+    const tr = mc.querySelector('.mc-track'), slides = tr.children;
+    const to = slides[Math.max(0, Math.min(slides.length - 1, mcIndex(tr) + d))];
+    tr.scrollTo({ left: to.offsetLeft, behavior: 'smooth' });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.mc-nav'); if (b) mcStep(b.closest('.mc'), +b.dataset.d);
+  });
+  addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (document.querySelector('dialog[open]') || (e.target.matches && e.target.matches('input, textarea')) || dEl.hidden) return;
+    const mc = dEl.querySelector('.mc.many'); if (!mc) return;
+    e.preventDefault(); mcStep(mc, e.key === 'ArrowLeft' ? -1 : 1);
+  });
+  // a tap on any photo (a card strip, the Gallery, a receipt) opens the viewer on its list
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.mc-slide, .gal-item, .sw-photo'); if (!b) return;
+    const host = b.closest('[data-media]'); if (!host) return;
+    openViewer(JSON.parse(host.dataset.media), +b.dataset.i || 0);
+  });
+
+  const viewer = $('#viewer'), vwTrack = $('#vwTrack'), vwThumbs = $('#vwThumbs');
+  let vwList = [];
+  const vwIndex = () => Math.max(0, Math.min(vwList.length - 1, Math.round(vwTrack.scrollLeft / Math.max(1, vwTrack.clientWidth))));
+  function openViewer(list, i) {
+    vwList = list;
+    vwTrack.innerHTML = list.map(m => `<div class="vw-slide">${isVideo(m)
+      ? `<video src="${esc(m.src)}" controls playsinline preload="metadata"></video>`
+      : `<img src="${esc(m.src)}" alt="${esc(m.alt || '')}" decoding="async">`}</div>`).join('');
+    vwThumbs.innerHTML = list.length > 1 ? list.map((m, k) => `<button data-k="${k}" aria-label="Photo ${k + 1}">${thumbHTML(m)}</button>`).join('') : '';
+    viewer.classList.toggle('single', list.length < 2);
+    viewer.showModal();
+    const jump = () => { vwTrack.scrollTo({ left: i * vwTrack.clientWidth, behavior: 'instant' }); vwSync(); };
+    jump(); requestAnimationFrame(jump);
+  }
+  let vwShown = -1;
+  function vwSync() {
+    const i = vwIndex(), m = vwList[i];
+    $('#vwCount').textContent = vwList.length > 1 ? `${i + 1} / ${vwList.length}` : '';
+    $('#vwCap').textContent = m && m.cap ? m.cap : '';
+    $('#vwPrev').disabled = i === 0; $('#vwNext').disabled = i === vwList.length - 1;
+    vwTrack.querySelectorAll('video').forEach((v, k) => { if (k !== i) v.pause(); });
+    if (i === vwShown) return;
+    vwShown = i;
+    vwThumbs.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === i));
+    const b = vwThumbs.children[i]; // keep the current thumbnail in the middle of the strip
+    if (b) vwThumbs.scrollTo({ left: b.offsetLeft - (vwThumbs.clientWidth - b.offsetWidth) / 2, behavior: 'smooth' });
+  }
+  vwTrack.addEventListener('scroll', vwSync, { passive: true });
+  function vwTo(to) {
+    to = Math.max(0, Math.min(vwList.length - 1, to));
+    const left = to * vwTrack.clientWidth;
+    vwTrack.scrollTo({ left, behavior: 'smooth' });
+    setTimeout(() => { if (vwIndex() !== to) vwTrack.scrollTo({ left, behavior: 'instant' }); vwSync(); }, 450); // smooth scrolling can be off
+  }
+  // a click on the dark around the photo (not the photo itself) closes the viewer
+  vwTrack.addEventListener('click', e => { if (e.target === vwTrack || e.target.classList.contains('vw-slide')) viewer.close(); });
+  vwThumbs.addEventListener('click', e => { const b = e.target.closest('button[data-k]'); if (b) vwTo(+b.dataset.k); });
+  $('#vwPrev').onclick = () => vwTo(vwIndex() - 1);
+  $('#vwNext').onclick = () => vwTo(vwIndex() + 1);
+  $('#vwClose').onclick = () => viewer.close();
+  viewer.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') vwTo(vwIndex() - 1); else if (e.key === 'ArrowRight') vwTo(vwIndex() + 1); });
+  viewer.addEventListener('close', () => { vwTrack.innerHTML = ''; vwThumbs.innerHTML = ''; vwList = []; vwShown = -1; });
+  addEventListener('resize', () => { if (viewer.open) vwTrack.scrollTo({ left: vwIndex() * vwTrack.clientWidth }); });
+  $('#vwSave').onclick = () => saveMedia(vwList[vwIndex()]);
+  // phones get the share sheet (its "Save image" puts it in the photo library);
+  // everything else downloads the file
+  async function saveMedia(m) {
+    if (!m) return;
+    const name = decodeURIComponent(m.src.split('/').pop().split(/[?#]/)[0]) || 'emma-helsinki.jpg';
+    try {
+      const blob = await (await fetch(m.src)).blob();
+      const file = new File([blob], name, { type: blob.type });
+      if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] }); return;
+      }
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch (err) { if (!err || err.name !== 'AbortError') window.open(m.src, '_blank', 'noopener'); }
+  }
+
+  // ── gallery ────────────────────────────────────────────
+  // The trip as a storyline: every activity with photos, in the order it happened, each a
+  // row of square thumbnails under its day, time and name. One viewer runs across them all.
+  function renderGallery() {
+    const groups = [], seen = new Set();
+    Object.entries(ACTUAL).forEach(([d, plan]) => plan.steps.forEach(s => {
+      const p = s.act && byId[s.act];
+      if (!p || seen.has(p.id)) return;
+      const items = mediaOf(p); if (!items.length) return;
+      seen.add(p.id); groups.push({ day: d, t: s.t, p, name: s.name || p.name, items });
+    }));
+    const all = groups.flatMap(g => g.items.map(m => ({ ...m, cap: `${ACTUAL[g.day].label} · ${g.name}` })));
+    // one row per activity; a longer one ends in a "+N" tile that unfolds the rest
+    let k = 0;
+    $('#gallery').innerHTML = groups.length ? `<div class="story" ${mediaAttr(all)}>${groups.map(g => {
+      const fold = g.items.length > GAL_ROW;
+      return `
+      <section class="st-group${fold ? ' folded' : ''}" style="--dc:${DAYC[g.day]}">
+        <button class="st-head" data-day="${g.day}" data-where="${g.p.id}">
+          <span class="st-when">${esc(ACTUAL[g.day].label)} · ${esc(g.t)}</span><b>${esc(g.name)}</b>
+        </button>
+        <div class="gal">${g.items.map((m, j) => fold && j === GAL_ROW - 1
+          ? `<button class="gal-item gal-more" data-i="${k++}" aria-label="${esc(g.name)}, ${g.items.length - j} more">${thumbHTML(m)}<span>+${g.items.length - j}</span></button>`
+          : `<button class="gal-item" data-i="${k++}" aria-label="${esc(g.name)}, photo">${thumbHTML(m)}</button>`).join('')}</div>
+      </section>`; }).join('')}</div>` : '<p class="empty">Nothing here yet.</p>';
+  }
+  const GAL_ROW = 5;
+  $('#gallery').addEventListener('click', e => {
+    const more = e.target.closest('.folded .gal-more'); // unfold, don't open the viewer
+    if (more) { e.stopPropagation(); more.closest('.st-group').classList.remove('folded'); return; }
+    const b = e.target.closest('.st-head'); if (!b) return;
+    if (b.dataset.day !== day) setDay(b.dataset.day);
+    focusPlace(b.dataset.where);
+  });
+
+  // ── swish ──────────────────────────────────────────────
+  // Who paid what (data.js BILLS), and the fewest payments that square everyone up,
+  // in euros and in kronor at today's rate.
+  let fx = FX.sekPerEur;
+  const person = id => PEOPLE.find(x => x.id === id) || { id, name: id, color: '#8a8f98' };
+  const chip = id => { const x = person(id); return `<span class="pc" style="--pc:${x.color}">${esc(x.name)}</span>`; };
+  const eurTxt = v => '€' + (Math.round(v * 100) / 100).toFixed(2).replace(/\.00$/, '');
+  const krTxt = v => Math.round(v * fx).toLocaleString('sv-SE') + ' kr';
+  function settle() {
+    const bal = Object.fromEntries(PEOPLE.map(x => [x.id, 0]));
+    BILLS.forEach(b => {
+      const split = b.for && b.for.length ? b.for : PEOPLE.map(x => x.id);
+      bal[b.by] = (bal[b.by] || 0) + b.eur;
+      split.forEach(id => { bal[id] = (bal[id] || 0) - b.eur / split.length; });
+    });
+    // in whole cents that add up to zero (the rounding remainder goes to the biggest balance)
+    const cents = Object.entries(bal).map(([id, v]) => ({ id, c: Math.round(v * 100) }));
+    const rest = cents.reduce((t, x) => t + x.c, 0);
+    if (rest && cents.length) cents.reduce((m, x) => Math.abs(x.c) > Math.abs(m.c) ? x : m).c -= rest;
+    cents.forEach(x => { bal[x.id] = x.c / 100; });
+    // the biggest debt pays the biggest credit, again and again: at most n−1 payments
+    const side = sign => cents.map(x => ({ id: x.id, c: x.c * sign })).filter(x => x.c > 0);
+    const debt = side(-1), cred = side(1), pay = [];
+    while (debt.length && cred.length) {
+      debt.sort((a, b) => b.c - a.c); cred.sort((a, b) => b.c - a.c);
+      const d = debt[0], c = cred[0], amt = Math.min(d.c, c.c);
+      pay.push({ from: d.id, to: c.id, eur: amt / 100 });
+      d.c -= amt; c.c -= amt;
+      if (d.c <= 0) debt.shift();
+      if (c.c <= 0) cred.shift();
+    }
+    return { bal, pay };
+  }
+  const fmtDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  function renderSwish() {
+    const { bal, pay } = settle();
+    const bills = BILLS.map((b, i) => ({ ...b, i })).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.i - b.i);
+    const photos = bills.filter(b => b.photo).map(b => ({ src: b.photo, alt: b.what }));
+    let ph = 0;
+    $('#swish').innerHTML = (BILLS.length ? `
+      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${eurTxt(t.eur)}</b><span class="sw-kr">${krTxt(t.eur)}</span></div>`).join('')
+        : '<p class="sw-square">All square ✓</p>'}</div>
+      <div class="sw-people">${PEOPLE.map(x => { const v = Math.round(bal[x.id] * 100) / 100;
+        return `<div class="sw-p" style="--pc:${x.color}"><b>${esc(x.name)}</b><span>${v > 0 ? '+' : v < 0 ? '−' : ''}${eurTxt(Math.abs(v))}</span></div>`; }).join('')}</div>` : '')
+      + `<ul class="sw-bills" ${mediaAttr(photos)}>${bills.map(b => {
+        const sub = [b.date && fmtDate(b.date), b.for && b.for.length && b.for.length < PEOPLE.length ? 'for ' + b.for.map(id => person(id).name).join(', ') : ''].filter(Boolean).join(' · ');
+        return `<li style="--pc:${person(b.by).color}">${chip(b.by)}
+          <span class="sw-what"><b>${esc(b.what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+          <span class="sw-amt">${eurTxt(b.eur)}</span>
+          ${b.photo ? `<button class="sw-photo" data-i="${ph++}" aria-label="Receipt"><img src="${esc(b.photo)}" alt="" loading="lazy"></button>` : ''}</li>`;
+      }).join('')}</ul>`
+      + (BILLS.length ? `<p class="fine">1 € = ${fx.toFixed(2)} kr</p>` : '<p class="empty">No bills yet.</p>');
+  }
+  async function fetchFx() {
+    try {
+      const r = await fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=SEK'); if (!r.ok) return;
+      const v = (await r.json()).rates.SEK;
+      if (v > 5 && v < 20) { fx = v; renderSwish(); }
+    } catch {}
+  }
+
   // ── bingo ──────────────────────────────────────────────
   // A popup over the plan. Everyone types a secret number; it seeds their own 5×5 card:
   // 8 dares + 17 moments, shuffled. Same number = same card on any device, and nobody
-  // sees yours without it. Cards can only be made until Sat 3 Oct 09:00 (Helsinki);
-  // after that the number is locked, and without a card you are out of the game.
-  const CARD_DEADLINE = Date.UTC(2026, 9, 3, 6, 0); // 09:00 EEST
+  // sees yours without it. (The Saturday-morning card lock is gone: we never played it.)
   const SIZE = 5, DARES_PER_CARD = 8;
-  // admins can pretend it is already past the deadline, to check the locked screens
-  const testLock = () => { try { return isAdmin() && sessionStorage.getItem('emma_testlock') === '1'; } catch { return false; } };
-  // the deadline binds regular players only: an admin can still make a card after it
-  // (e.g. to let in someone who forgot); Test lock shows admins the locked screens anyway
-  const locked = () => (Date.now() >= CARD_DEADLINE && !isAdmin()) || testLock();
   const hashSeed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   function seeded(n) {
     let t = n >>> 0;
@@ -1009,22 +1211,11 @@
   const idx = [...Array(SIZE).keys()];
   idx.forEach(i => lines.push(idx.map(j => i * SIZE + j), idx.map(j => j * SIZE + i)));
   lines.push(idx.map(i => i * SIZE + i), idx.map(i => i * SIZE + SIZE - 1 - i));
-  const fmtDeadline = () => {
-    const ms = CARD_DEADLINE - Date.now(), d = Math.floor(ms / 864e5), hr = Math.floor(ms % 864e5 / 36e5);
-    return `⏳ Cards lock <b>Sat 3 Oct, 09:00</b>: ${d ? d + ' days ' : ''}${hr} h to go.`;
-  };
   // someone with a full line gets a gold-and-pink site: logo, title, day bar and clock
   function markBingoed(on) { document.documentElement.classList.toggle('bingoed', on); }
   function renderBingo(celebrate) {
-    const playing = !!bingo.seed, isLocked = locked();
+    const playing = !!bingo.seed;
     $('#bingoGate').hidden = playing; $('#bingoPlay').hidden = !playing;
-    $('#bingoForm').hidden = isLocked; $('#bingoOut').hidden = !isLocked;
-    $('#bingoDeadline').innerHTML = isLocked ? '' : fmtDeadline();
-    $('#bingoChange').hidden = isLocked; $('#bingoLock').hidden = !isLocked;
-    const tl = $('#bingoTestLock');
-    tl.hidden = !isAdmin();
-    tl.setAttribute('aria-pressed', testLock());
-    tl.textContent = testLock() ? '🔒 Test lock: on' : '🔓 Test lock';
     if (!playing) return 0;
     const cells = cardFor(bingo.seed), hit = new Set(bingo.hits);
     const won = lines.filter(l => l.every(i => hit.has(i))), winCells = new Set(won.flat());
@@ -1044,17 +1235,12 @@
   const modal = $('#bingoModal');
   function openBingo() { wins = renderBingo(null); modal.showModal(); }
   $('#bingoClose').onclick = () => modal.close();
-  $('#bingoTestLock').onclick = () => {
-    try { sessionStorage.setItem('emma_testlock', testLock() ? '0' : '1'); } catch {}
-    wins = renderBingo(null);
-  };
   // a drag that starts inside the card and is released over the backdrop must not close it
   let downOnBackdrop = false;
   modal.addEventListener('pointerdown', e => { downOnBackdrop = e.target === modal; });
   modal.addEventListener('click', e => { if (e.target === modal && downOnBackdrop) modal.close(); downOnBackdrop = false; });
   $('#bingoForm').addEventListener('submit', e => {
     e.preventDefault();
-    if (locked()) { renderBingo(null); return; }
     const v = $('#bingoSeed').value.trim();
     if (!v) { $('#bingoSeed').focus(); return; }
     bingo = { seed: v, hits: [] }; store.set('emma_bingo5', bingo);
@@ -1068,7 +1254,6 @@
     wins = renderBingo(wins);
   });
   $('#bingoChange').onclick = () => {
-    if (locked()) return;
     if (bingo.hits.length && !confirm('A new number gives you a different card and clears your marks. Change it?')) return;
     bingo = { seed: '', hits: [] }; store.set('emma_bingo5', bingo); wins = renderBingo(null);
     setTimeout(() => $('#bingoSeed').focus(), 50);
@@ -1081,12 +1266,12 @@
   // ── budget ─────────────────────────────────────────────
   function renderBudget() {
     let total = 0;
-    const rows = Object.entries(P).map(([k, d]) => {
+    const rows = Object.entries(PLAN).map(([k, d]) => {
       const parts = d.steps.filter(s => stepCost(s) && (!s.act || byId[s.act])).map(s => {
         const name = s.label || s.name || byId[s.act].name.split(' — ')[0].split(' (')[0];
         return `${name} €${+stepCost(s).toFixed(2)}`;
       });
-      const c = dayCost(k); total += c;
+      const c = dayCost(k, PLAN); total += c;
       return `<tr><td><b>${esc(d.label)}</b><div class="sub">${esc(parts.join(' · '))}</div></td><td>€${Math.round(c)}</td></tr>`;
     }).join('');
     $('#budget').innerHTML = `
@@ -1104,6 +1289,8 @@
   // ── tabs ───────────────────────────────────────────────
   const tabs = $('.tabs');
   function showTab(name) {
+    const b = tabs.querySelector(`[data-tab="${name}"]`);
+    if (!b || (b.dataset.mode && b.dataset.mode !== (original ? 'original' : 'actual'))) name = 'plan';
     if (isPhone() && name !== 'plan') { openSheet(name); return; }
     tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
     document.querySelectorAll('.side .panel').forEach(p => { p.hidden = p.id !== `panel-${name}`; });
@@ -1134,6 +1321,23 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.tab === 'bingo') openBingo(); else showTab(b.dataset.tab);
   });
+
+  // ── the 📜 button: the trip as it happened ⇄ the original plan ──
+  // The whole site switches: the plan on the map, the day colours (pink ⇄ blue) and the
+  // tabs (Gallery and Swish ⇄ Bingo, Packing and Budget).
+  const modeBtn = $('#modeBtn');
+  function setMode(v) {
+    original = v;
+    document.documentElement.classList.toggle('original', v);
+    modeBtn.setAttribute('aria-pressed', v);
+    modeBtn.title = v ? 'Back to the trip as it happened' : 'The original plan';
+    P = v ? PLAN : ACTUAL;
+    if (sheet.open) sheet.close();
+    indexPlan(); renderDays(); setDay(day);
+    const cur = tabs.querySelector('[aria-selected="true"]');
+    showTab(cur ? cur.dataset.tab : 'plan');
+  }
+  modeBtn.onclick = () => setMode(!original);
 
   // ── confetti ───────────────────────────────────────────
   function confetti(big) {
@@ -1202,7 +1406,7 @@
   const logo = $('#logo');
   logo.addEventListener('click', e => {
     toggleLockup(); // the logo flips the title back and forth
-    if (isAdmin()) { if (!isPhone()) showTab('secret'); return; }
+    if (isAdmin()) { if (!isPhone()) { if (!original) setMode(true); showTab('secret'); } return; }
     taps++;
     clearTimeout(tapTimer); tapTimer = setTimeout(() => { taps = 0; }, 2500);
     if (taps >= 4) {
@@ -1279,19 +1483,10 @@
     $('#lock').onclick = () => {
       try { sessionStorage.removeItem('emma_admin'); } catch {}
       $('#secretTab').hidden = true; $('#secret').innerHTML = '';
-      setSecret(false); showTab('plan');
+      showTab('plan');
     };
-    $('#secretTab').hidden = false;
-    // the secret plan: surprise places join byId + get markers, shown only in secret mode
-    window.SECRET_PLAN = data.secretPlan || null;
-    if (!secretPlaces.length) { // register once, even if the gate is opened again
-      secretPlaces = (data.secretPlaces || []).filter(p => p && p.id && !byId[p.id]);
-      secretPlaces.forEach(p => { p.tips ||= []; p.cat = CATS[p.cat] ? p.cat : 'make'; byId[p.id] = p; if (!p.virtual) addMarker(p); }); // secret transfers get a card, not a pin
-    }
-    let wasOn = false;
-    try { wasOn = sessionStorage.getItem('emma_secret') === '1'; } catch {}
-    setSecret(wasOn);
-    if (!quiet) { if (!isPhone()) showTab('secret'); confetti(); } // phones: no Traditions screen
+    $('#secretTab').hidden = false; // part of the original plan's tabs
+    if (!quiet) { if (!isPhone()) { if (!original) setMode(true); showTab('secret'); } confetti(); } // phones: no Traditions screen
   }
 
   // Light theme only (Nam: no dark mode). The dark tokens in styles.css stay inert,
@@ -1405,11 +1600,12 @@
 
   // ── boot ───────────────────────────────────────────────
   renderDays();
-  renderBudget();
+  renderBudget(); renderGallery(); renderSwish(); fetchFx();
   placeForLayout();
   setDay('sat');
   playLockup();
   if (isAdmin()) unlock(true);
+  // the site opens on the trip as it happened; a remembered tab only if it belongs there
   const t = isPhone() ? 'plan' : store.get('emma_tab', 'plan');
-  showTab(t === 'secret' && !isAdmin() ? 'plan' : t === 'dares' || t === 'bingo' ? 'plan' : t === 'moments' ? 'packing' : t);
+  showTab(['gallery', 'swish'].includes(t) ? t : 'plan');
 })();

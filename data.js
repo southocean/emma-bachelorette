@@ -20,6 +20,10 @@
 //   steps:     [{ title, items: [[icon, text], ...] }]
 //   prices:    { title?, rows: [[icon, label, price], ...] }
 //   tags:      ['short', 'facts']
+//   media:     ['media/activate/1.jpg', { src: 'media/x/clip.mp4', alt?: '...' }, ...]
+//              photos from the trip, in shooting order: a carousel on the card and the
+//              activity's row in the Gallery. Add them with tools/media.py (it makes the
+//              square thumbnails in media/<id>/thumbs/).
 
 window.TRIP = {
   title: 'Helsinki, Emma edition',
@@ -81,8 +85,9 @@ window.PLACES = [
     cost: '≈ €20–30 (check)', costPP: 25, time: '1 h', energy: 3,
     tags: ['60 min', 'one team of 4', 'Itis Bulevardi, 2nd floor', 'sporty clothes'],
     hours: [{ day: 'sat', open: '10:00', close: '22:00' }],
-    tips: ['Book the 16:15 slot online so the four of you play together.', 'The sauna is straight after: shower there, and bring the day clothes to change back into.', '+358 50 375 6709 · itis@activategames.fi'],
+    tips: ['Book a slot online so the four of you play together.', '+358 50 375 6709 · itis@activategames.fi'],
     url: 'https://playactivate.fi/en/itis',
+    media: ['media/activate/187688.jpg', 'media/activate/187689.jpg', 'media/activate/187694.jpg', 'media/activate/187698.jpg', 'media/activate/187699.jpg'],
   },
   {
     id: 'suomenlinna', name: 'Champagne spray & dance', venue: 'Suomenlinna sea fortress', cat: 'make', lat: 60.14009, lng: 24.98997, gq: 'Kuninkaanportti, Suomenlinna, 00190 Helsinki',
@@ -187,6 +192,27 @@ window.PLACES = [
     what: 'A last coffee in the Finnish chocolate brand\'s flagship café, a 10-minute walk from the station.',
     cost: '≈ €5–12', costPP: 8, time: '45 min', energy: 1,
     tips: ['Check Sunday opening hours before you go.'],
+  },
+  {
+    id: 'r305', name: 'Dinner at 305', venue: 'Ravintola 305, Toinen linja 3, Hakaniemi', cat: 'eat', lat: 60.18094, lng: 24.95064, gq: 'Ravintola 305, Toinen linja 3, 00530 Helsinki',
+    hook: 'The surprise dinner: Michelin Bib Gourmand, 5 courses',
+    what: 'Nordic bistro cooking with Finnish meat and fish, and very pretty plates. Known for its sourdough and mocktails.',
+    cost: '€65 Menu 305 (5 courses)', costPP: 65, time: '2.5 h', energy: 1,
+    hours: [{ day: 'sat', open: '16:00', close: '23:00' }],
+    tags: ['Michelin Bib Gourmand', '5 courses', 'mocktails'],
+    steps: [{ title: 'The surprise', items: [
+      ['📝', 'Menu 305 pre-ordered for all 4'],
+      ['🍸', 'Only the drinks list on the table: "tonight the kitchen is cooking for you"'],
+      ['🍽️', 'First course with the drinks'],
+      ['🧾', 'The bill to Nam, discreetly'],
+    ] }],
+    tips: [],
+    url: 'https://www.ravintola305.fi/en/',
+  },
+  {
+    id: 'cafe', name: 'Morning coffee', venue: 'GTC Café, Ruoholahdenkatu 8', cat: 'eat', lat: 60.16575, lng: 24.92874, gq: 'GTC Café, Ruoholahdenkatu 8, 00180 Helsinki',
+    hook: 'Coffee round the corner from the Airbnb',
+    what: '', cost: '≈ €5', costPP: 5, time: '30 min', energy: 1, tips: [],
   },
 
   // logistics pins: on the map, but only as lines between activities in the plan
@@ -551,6 +577,50 @@ window.TRIPS = [
       ['16:43', '16:54', '', '4'], ['16:51', '17:02', 'ours', '2'], ['16:55', '17:06', 'latest', '4'] ] }],
     tips: [],
   },
+
+  // ── transfers of the trip as it happened (the actual plan) ──
+  {
+    id: 'act-sat-1', name: 'Metro + ferry to Suomenlinna', venue: 'Kamppi → Helsingin yliopisto → Market Square → Suomenlinna', cat: 'practical', virtual: true, from: 'saigonese', to: 'suomenlinna',
+    hook: 'Metro 3 min, walk 7 min, ferry 15 min',
+    what: '', cost: 'HSL day ticket ≈ €11', costPP: 0, time: '≈ 45 min', energy: 1,
+    journey: [['🚶', 'Kamppi metro', '5 min'], ['🚇', 'M1 / M2 east', '2 stops'], ['🚶', 'Market Square', '7 min'], ['⛴️', 'Ferry 19', '15 min']],
+    tips: [],
+  },
+  {
+    id: 'act-sat-2', name: 'Ferry back to Allas', venue: 'Suomenlinna → Market Square → Allas', cat: 'practical', virtual: true, from: 'suomenlinna', to: 'allas',
+    hook: 'Ferry 15 min, then 5 min on foot',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 25 min', energy: 1,
+    journey: [['⛴️', 'Ferry 19', '15 min'], ['🚶', 'Allas', '5 min along the quay']],
+    tips: [],
+  },
+  {
+    id: 'trip-305', name: 'Metro to 305', venue: 'Allas → Helsingin yliopisto → Hakaniemi', cat: 'practical', virtual: true, from: 'allas', to: 'r305',
+    hook: 'Walk 8 min, metro 1 stop, walk 5 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 20 min', energy: 1,
+    journey: [['🚶', 'Helsingin yliopisto metro', '8 min'], ['🚇', 'M1 / M2 east', '1 stop'], ['🚶', '305', '5 min from Hakaniemi']],
+    tips: [],
+  },
+  {
+    id: 'act-sat-3', name: 'Metro home', venue: 'Hakaniemi → Kamppi', cat: 'practical', virtual: true, from: 'r305', to: 'home',
+    hook: 'Walk 5 min, metro 3 stops, walk 6 min',
+    what: '', cost: 'In the HSL day ticket', costPP: 0, time: '≈ 20 min', energy: 1,
+    journey: [['🚶', 'Hakaniemi metro', '5 min'], ['🚇', 'M1 / M2 west', '3 stops'], ['🚶', 'The Airbnb', '6 min from Kamppi']],
+    tips: [],
+  },
+  {
+    id: 'act-sun-1', name: 'Metro to Itis', venue: 'Kamppi → Itäkeskus', cat: 'practical', virtual: true, from: 'cafe', to: 'activate',
+    hook: 'M1 or M2 east · 16 min, bags and all',
+    what: '', cost: 'HSL ABC day ticket €12.80', costPP: 0, time: '≈ 25 min', energy: 1,
+    journey: [['🚶', 'Kamppi metro', '5 min'], ['🚇', 'M1 / M2 east', '16 min'], ['🚶', 'Itis, 2nd floor', '3 min']],
+    tips: [],
+  },
+  {
+    id: 'act-sun-2', name: 'Metro to Quê Em', venue: 'Itäkeskus → Kamppi', cat: 'practical', virtual: true, from: 'activate', to: 'queem',
+    hook: 'M1 or M2 west · 16 min',
+    what: '', cost: 'In the ABC day ticket', costPP: 0, time: '≈ 25 min', energy: 1,
+    journey: [['🚶', 'Itäkeskus metro', '3 min'], ['🚇', 'M1 / M2 west', '16 min'], ['🚶', 'Quê Em', '3 min from Kamppi']],
+    tips: [],
+  },
 ];
 window.PLACES.push(...window.TRIPS);
 
@@ -610,6 +680,56 @@ window.PLAN = {
     ],
   },
 };
+
+// The trip as it actually happened: what the site shows by default. PLAN above is the
+// original plan, shown with the 📜 button.
+window.ACTUAL = {
+  fri: {
+    label: 'Fri 2 Oct', title: 'Land',
+    steps: [
+      { end: '23:30', t: '22:35', go: 'Land at HEL · I/P train to Central Station', icon: '✈️', place: 'airport', open: true, costPP: 4.5, label: 'Airport train' },
+      { t: '23:30', go: 'Walk to the Airbnb · check in', icon: '🚶', place: 'trip-fri-1', open: true },
+    ],
+  },
+  sat: {
+    label: 'Sat 3 Oct', title: 'The big day',
+    steps: [
+      { t: '10:40', go: 'Alko Arkadia for the bubbles', icon: '🛒', place: 'alko', open: true, costPP: 4, label: 'Bubbles' },
+      { t: '11:00', act: 'bauchladen', do: 'Emma sells her tray to Saturday shoppers.' },
+      { t: '12:00', end: '14:00', act: 'saigonese', do: 'Lunch at our friend\'s Vietnamese vegan kitchen.' },
+      { t: '14:00', go: 'Metro + ferry to Suomenlinna', icon: '⛴️', place: 'act-sat-1', open: true, costPP: 11, label: 'HSL day ticket' },
+      { t: '14:45', act: 'suomenlinna', do: 'Straight to the cliffs: the spray and the dance.' },
+      { t: '17:00', go: 'Ferry back, walk to Allas', icon: '⛴️', place: 'act-sat-2', open: true },
+      { t: '17:30', end: '19:00', act: 'allas', do: 'Advice, one song each, the sea pool.' },
+      { t: '20:05', go: 'Metro to Hakaniemi, walk to 305', icon: '🚇', place: 'trip-305', open: true },
+      { t: '20:30', end: '23:00', act: 'r305', do: 'The surprise: five courses.' },
+      { t: '23:00', go: 'Metro home', icon: '🌙', place: 'act-sat-3', open: true },
+    ],
+  },
+  sun: {
+    label: 'Sun 4 Oct', title: 'Jump & home',
+    steps: [
+      { t: '09:40', act: 'cafe', do: 'Checked out, bags with us all day.' },
+      { t: '10:05', go: 'Metro to Itäkeskus', icon: '🚇', place: 'act-sun-1', open: true, costPP: 12.8, label: 'HSL ABC day ticket' },
+      { t: '10:30', end: '12:30', act: 'activate', do: 'The LED jump, moved to Sunday.' },
+      { t: '12:30', go: 'Metro back to Kamppi', icon: '🚇', place: 'act-sun-2', open: true },
+      { t: '13:00', end: '16:30', act: 'queem', name: 'Quê Em buffet', do: 'The Vietnamese buffet, all afternoon.', cost: '€29.90 buffet', costPP: 30 },
+      { t: '16:50', act: 'senate', name: 'The white cathedral', do: 'A walk up to Senate Square.' },
+      { end: '21:15', t: '18:30', go: 'Airport train · flight 21:15', icon: '✈️', place: 'airport', open: true },
+    ],
+  },
+};
+
+// The Swish tab. Bills are split evenly between everyone in `for` (default: all four).
+//   { by: 'nam', what: 'Dinner at 305', eur: 340, date?: '2026-10-03', for?: ['tracy', ...], photo?: 'media/bills/305.jpg' }
+window.PEOPLE = [
+  { id: 'tracy', name: 'Tracy', color: '#1f9e89' },
+  { id: 'jane', name: 'Jane', color: '#e08a1e' },
+  { id: 'emma', name: 'Emma', color: '#d94f8a' },
+  { id: 'nam', name: 'Nam', color: '#5b6bd6' },
+];
+window.BILLS = [];
+window.FX = { sekPerEur: 11.29, date: '2026-10-02' }; // the page fetches a fresh rate; this is the fallback
 
 // Small, cheap rituals that make the trip. No tab of their own any more; search still finds them.
 window.MOMENTS = [
