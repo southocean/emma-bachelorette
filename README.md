@@ -19,5 +19,5 @@ in the header switches to the original plan (`PLAN`, blue: Plan, Bingo, Packing,
   `media/activate/`, makes the square thumbnails, strips the metadata (GPS included) and prints the
   `media: [...]` line to put on that place in `data.js`. They show on the card and in the Gallery.
 - **A bill (Swish tab):** an entry in `BILLS`:
-  `{ by: 'jane', what: 'Allas tickets', eur: 96, date: '2026-10-03', photo: 'media/bills/allas.jpg' }`.
+  `{ by: 'jane', what: 'Allas', kr: 1111.39, date: '2026-10-03', photo: 'media/bills/allas.jpg' }` (or `eur: 30`).
   Split evenly between all four unless `for: ['tracy', 'jane', 'nam']` says otherwise.

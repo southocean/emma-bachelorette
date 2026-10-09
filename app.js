@@ -1128,21 +1128,22 @@
   });
 
   // ── swish ──────────────────────────────────────────────
-  // Who paid what (data.js BILLS), and the fewest payments that square everyone up,
-  // in euros and in kronor at today's rate.
-  let fx = FX.sekPerEur;
+  // Who paid what (data.js BILLS), and the fewest payments that square everyone up. Swish
+  // is in kronor, so everything settles in kronor; euro bills convert at the trip's rate.
+  const fx = FX.sekPerEur;
   const person = id => PEOPLE.find(x => x.id === id) || { id, name: id, color: '#8a8f98' };
   const chip = id => { const x = person(id); return `<span class="pc" style="--pc:${x.color}">${esc(x.name)}</span>`; };
   const eurTxt = v => '€' + (Math.round(v * 100) / 100).toFixed(2).replace(/\.00$/, '');
-  const krTxt = v => Math.round(v * fx).toLocaleString('sv-SE') + ' kr';
+  const krTxt = v => (Math.round(v * 100) / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr';
+  const billKr = b => b.kr != null ? b.kr : b.eur * fx;
   function settle() {
     const bal = Object.fromEntries(PEOPLE.map(x => [x.id, 0]));
     BILLS.forEach(b => {
-      const split = b.for && b.for.length ? b.for : PEOPLE.map(x => x.id);
-      bal[b.by] = (bal[b.by] || 0) + b.eur;
-      split.forEach(id => { bal[id] = (bal[id] || 0) - b.eur / split.length; });
+      const split = b.for && b.for.length ? b.for : PEOPLE.map(x => x.id), kr = billKr(b);
+      bal[b.by] = (bal[b.by] || 0) + kr;
+      split.forEach(id => { bal[id] = (bal[id] || 0) - kr / split.length; });
     });
-    // in whole cents that add up to zero (the rounding remainder goes to the biggest balance)
+    // in whole öre that add up to zero (the rounding remainder goes to the biggest balance)
     const cents = Object.entries(bal).map(([id, v]) => ({ id, c: Math.round(v * 100) }));
     const rest = cents.reduce((t, x) => t + x.c, 0);
     if (rest && cents.length) cents.reduce((m, x) => Math.abs(x.c) > Math.abs(m.c) ? x : m).c -= rest;
@@ -1153,7 +1154,7 @@
     while (debt.length && cred.length) {
       debt.sort((a, b) => b.c - a.c); cred.sort((a, b) => b.c - a.c);
       const d = debt[0], c = cred[0], amt = Math.min(d.c, c.c);
-      pay.push({ from: d.id, to: c.id, eur: amt / 100 });
+      pay.push({ from: d.id, to: c.id, kr: amt / 100 });
       d.c -= amt; c.c -= amt;
       if (d.c <= 0) debt.shift();
       if (c.c <= 0) cred.shift();
@@ -1167,25 +1168,18 @@
     const photos = bills.filter(b => b.photo).map(b => ({ src: b.photo, alt: b.what }));
     let ph = 0;
     $('#swish').innerHTML = (BILLS.length ? `
-      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${eurTxt(t.eur)}</b><span class="sw-kr">${krTxt(t.eur)}</span></div>`).join('')
+      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(t.kr)}</b><span class="sw-kr">${eurTxt(t.kr / fx)}</span></div>`).join('')
         : '<p class="sw-square">All square ✓</p>'}</div>
       <div class="sw-people">${PEOPLE.map(x => { const v = Math.round(bal[x.id] * 100) / 100;
-        return `<div class="sw-p" style="--pc:${x.color}"><b>${esc(x.name)}</b><span>${v > 0 ? '+' : v < 0 ? '−' : ''}${eurTxt(Math.abs(v))}</span></div>`; }).join('')}</div>` : '')
+        return `<div class="sw-p" style="--pc:${x.color}"><b>${esc(x.name)}</b><span>${v > 0 ? '+' : v < 0 ? '−' : ''}${krTxt(Math.abs(v))}</span></div>`; }).join('')}</div>` : '')
       + `<ul class="sw-bills" ${mediaAttr(photos)}>${bills.map(b => {
         const sub = [b.date && fmtDate(b.date), b.for && b.for.length && b.for.length < PEOPLE.length ? 'for ' + b.for.map(id => person(id).name).join(', ') : ''].filter(Boolean).join(' · ');
         return `<li style="--pc:${person(b.by).color}">${chip(b.by)}
           <span class="sw-what"><b>${esc(b.what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
-          <span class="sw-amt">${eurTxt(b.eur)}</span>
+          <span class="sw-amt">${b.kr != null ? krTxt(b.kr) : eurTxt(b.eur)}</span>
           ${b.photo ? `<button class="sw-photo" data-i="${ph++}" aria-label="Receipt"><img src="${esc(b.photo)}" alt="" loading="lazy"></button>` : ''}</li>`;
       }).join('')}</ul>`
-      + (BILLS.length ? `<p class="fine">1 € = ${fx.toFixed(2)} kr</p>` : '<p class="empty">No bills yet.</p>');
-  }
-  async function fetchFx() {
-    try {
-      const r = await fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=SEK'); if (!r.ok) return;
-      const v = (await r.json()).rates.SEK;
-      if (v > 5 && v < 20) { fx = v; renderSwish(); }
-    } catch {}
+      + (BILLS.length ? `<p class="fine">1 € = ${fx.toFixed(2).replace('.', ',')} kr</p>` : '<p class="empty">No bills yet.</p>');
   }
 
   // ── bingo ──────────────────────────────────────────────
@@ -1600,7 +1594,7 @@
 
   // ── boot ───────────────────────────────────────────────
   renderDays();
-  renderBudget(); renderGallery(); renderSwish(); fetchFx();
+  renderBudget(); renderGallery(); renderSwish();
   placeForLayout();
   setDay('sat');
   playLockup();

@@ -721,15 +721,24 @@ window.ACTUAL = {
 };
 
 // The Swish tab. Bills are split evenly between everyone in `for` (default: all four).
-//   { by: 'nam', what: 'Dinner at 305', eur: 340, date?: '2026-10-03', for?: ['tracy', ...], photo?: 'media/bills/305.jpg' }
+// Amounts in kronor (`kr`) or euros (`eur`, converted at FX); everything settles in kronor.
+//   { by: 'nam', what: 'Allas', kr: 1111.39, date?: '2026-10-03', for?: ['tracy', ...], photo?: 'media/bills/allas.jpg' }
 window.PEOPLE = [
   { id: 'tracy', name: 'Tracy', color: '#1f9e89' },
   { id: 'jane', name: 'Jane', color: '#e08a1e' },
   { id: 'emma', name: 'Emma', color: '#d94f8a' },
   { id: 'nam', name: 'Nam', color: '#5b6bd6' },
 ];
-window.BILLS = [];
-window.FX = { sekPerEur: 11.29, date: '2026-10-02' }; // the page fetches a fresh rate; this is the fallback
+window.BILLS = [
+  { by: 'nam', what: 'Emma\'s flight', kr: 718.25, date: '2026-10-02', for: ['emma'] }, // 2 873 kr ÷ 4; Tracy and Jane have paid theirs
+  { by: 'nam', what: 'Bubbles from Alko', kr: 138.81, date: '2026-10-03', photo: 'media/bills/alko.jpg' },
+  { by: 'nam', what: 'Snacks for the tray', kr: 114.84, date: '2026-10-03', for: ['jane'], photo: 'media/bills/candy.jpg' },
+  { by: 'tracy', what: 'Lunch at Quán a Lợi', kr: 906.95, date: '2026-10-03', photo: 'media/bills/saigonese.jpg' },
+  { by: 'nam', what: 'Allas', kr: 1111.39, date: '2026-10-03', photo: 'media/bills/allas.jpg' },
+  { by: 'nam', what: 'Wine & tip at 305', eur: 90, date: '2026-10-03', for: ['tracy', 'jane', 'emma'] }, // €30 each
+  { by: 'jane', what: 'LED jump', kr: 1059.83, date: '2026-10-04' },
+];
+window.FX = { sekPerEur: 11.3636 }; // the rate on our cards that weekend
 
 // Small, cheap rituals that make the trip. No tab of their own any more; search still finds them.
 window.MOMENTS = [
