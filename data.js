@@ -722,12 +722,13 @@ window.ACTUAL = {
 
 // The Swish tab. Bills are split evenly between everyone in `for` (default: all four).
 // Amounts in kronor (`kr`) or euros (`eur`, converted at FX); everything settles in kronor.
+// A person with a `swish` number gets a QR button on every payment to them.
 //   { by: 'nam', what: 'Allas', kr: 1111.39, date?: '2026-10-03', for?: ['tracy', ...], photo?: 'media/bills/allas.jpg' }
 window.PEOPLE = [
   { id: 'tracy', name: 'Tracy', color: '#1f9e89' },
   { id: 'jane', name: 'Jane', color: '#e08a1e' },
   { id: 'emma', name: 'Emma', color: '#d94f8a' },
-  { id: 'nam', name: 'Nam', color: '#5b6bd6' },
+  { id: 'nam', name: 'Nam', color: '#5b6bd6', swish: '0725645852' },
 ];
 window.BILLS = [
   { by: 'nam', what: 'Emma\'s flight', kr: 718.25, date: '2026-10-02', for: ['emma'] }, // 2 873 kr ÷ 4; Tracy and Jane have paid theirs

@@ -139,6 +139,13 @@
   <div class="vw-thumbs" id="vwThumbs"></div>
 </dialog>
 
+<dialog id="qrBox" class="modal qr-box" aria-labelledby="qrTitle">
+  <header class="modal-head"><h2 id="qrTitle"></h2><button class="x" id="qrClose" aria-label="Close">✕</button></header>
+  <p class="qr-amt" id="qrAmt"></p>
+  <div class="qr-code" id="qrCode"></div>
+  <a class="qr-open" id="qrOpen">Open Swish</a>
+</dialog>
+
 <dialog id="gate">
   <form method="dialog" id="gateForm">
     <p class="gate-kicker">Restricted · admin only</p>
@@ -156,6 +163,7 @@
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="data.js"></script>
 <script src="admin.enc.js"></script>
 <script src="app.js"></script>

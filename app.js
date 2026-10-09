@@ -1136,6 +1136,7 @@
   const eurTxt = v => '€' + (Math.round(v * 100) / 100).toFixed(2).replace(/\.00$/, '');
   const krTxt = v => (Math.round(v * 100) / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr';
   const billKr = b => b.kr != null ? b.kr : b.eur * fx;
+  const QR_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm1-9h2v2H6V6Zm10 0h2v2h-2V6ZM6 16h2v2H6v-2Zm7-3h2v2h-2v-2Zm2 2h2v2h-2v-2Zm2-2h4v2h-2v2h-2v-4Zm-4 4h2v4h-2v-4Zm4 2h4v2h-4v-2Zm2-2h2v2h-2v-2Z"/></svg>';
   function settle() {
     const bal = Object.fromEntries(PEOPLE.map(x => [x.id, 0]));
     BILLS.forEach(b => {
@@ -1162,25 +1163,82 @@
     return { bal, pay };
   }
   const fmtDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  // Bills for all four are "split 4 ways": everyone's share of those is the same, which the
+  // table shows. Bills for some of us are "direct". The table adds them up per person to the
+  // balance that the payments at the top settle.
+  const isShared = b => !(b.for && b.for.length) || b.for.length === PEOPLE.length;
+  const num = c => (c / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const signed = c => (c > 0 ? '+' : c < 0 ? '−' : '') + num(Math.abs(c));
   function renderSwish() {
     const { bal, pay } = settle();
-    const bills = BILLS.map((b, i) => ({ ...b, i })).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.i - b.i);
-    const photos = bills.filter(b => b.photo).map(b => ({ src: b.photo, alt: b.what }));
+    if (!BILLS.length) { $('#swish').innerHTML = '<p class="empty">No bills yet.</p>'; return; }
+    const byDate = (a, b) => (a.date || '').localeCompare(b.date || '') || a.i - b.i;
+    const all = BILLS.map((b, i) => ({ ...b, i }));
+    const shared = all.filter(isShared).sort(byDate), direct = all.filter(b => !isShared(b)).sort(byDate);
+    const photos = [...shared, ...direct].filter(b => b.photo).map(b => ({ src: b.photo, alt: b.what }));
+    // per person, in öre: the equal share, what they paid of it, and the rest (direct) up to the balance
+    const sharedTotal = shared.reduce((t, b) => t + billKr(b), 0);
+    const row = id => {
+      const spent = Math.round(sharedTotal / PEOPLE.length * 100);
+      const paid = Math.round(shared.filter(b => b.by === id).reduce((t, b) => t + billKr(b), 0) * 100);
+      const final = Math.round(bal[id] * 100);
+      return { spent, paid, mine: paid - spent, direct: final - (paid - spent), final };
+    };
+    const rows = PEOPLE.map(x => ({ x, ...row(x.id) }));
     let ph = 0;
-    $('#swish').innerHTML = (BILLS.length ? `
-      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(t.kr)}</b><span class="sw-kr">${eurTxt(t.kr / fx)}</span></div>`).join('')
+    const billList = list => `<ul class="sw-bills">${list.map(b => {
+      const sub = [b.date && fmtDate(b.date), !isShared(b) ? 'for ' + b.for.map(id => person(id).name).join(', ') : ''].filter(Boolean).join(' · ');
+      return `<li style="--pc:${person(b.by).color}">${chip(b.by)}
+        <span class="sw-what"><b>${esc(b.what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+        <span class="sw-amt">${b.kr != null ? krTxt(b.kr) : eurTxt(b.eur)}</span>
+        ${b.photo ? `<button class="sw-photo" data-i="${ph++}" aria-label="Receipt"><img src="${esc(b.photo)}" alt="" loading="lazy"></button>` : ''}</li>`;
+    }).join('')}</ul>`;
+    const line = (label, f, cls = '') => `<tr class="${cls}"><th scope="row">${label}</th>${rows.map(r => `<td>${f(r)}</td>`).join('')}</tr>`;
+    $('#swish').innerHTML = `
+      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(t.kr)}</b><span class="sw-kr">${eurTxt(t.kr / fx)}</span>${person(t.to).swish
+          ? `<button class="sw-qr" data-from="${t.from}" data-to="${t.to}" data-kr="${t.kr}" aria-label="Swish QR code" title="Swish QR code">${QR_ICON}</button>` : ''}</div>`).join('')
         : '<p class="sw-square">All square ✓</p>'}</div>
-      <div class="sw-people">${PEOPLE.map(x => { const v = Math.round(bal[x.id] * 100) / 100;
-        return `<div class="sw-p" style="--pc:${x.color}"><b>${esc(x.name)}</b><span>${v > 0 ? '+' : v < 0 ? '−' : ''}${krTxt(Math.abs(v))}</span></div>`; }).join('')}</div>` : '')
-      + `<ul class="sw-bills" ${mediaAttr(photos)}>${bills.map(b => {
-        const sub = [b.date && fmtDate(b.date), b.for && b.for.length && b.for.length < PEOPLE.length ? 'for ' + b.for.map(id => person(id).name).join(', ') : ''].filter(Boolean).join(' · ');
-        return `<li style="--pc:${person(b.by).color}">${chip(b.by)}
-          <span class="sw-what"><b>${esc(b.what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
-          <span class="sw-amt">${b.kr != null ? krTxt(b.kr) : eurTxt(b.eur)}</span>
-          ${b.photo ? `<button class="sw-photo" data-i="${ph++}" aria-label="Receipt"><img src="${esc(b.photo)}" alt="" loading="lazy"></button>` : ''}</li>`;
-      }).join('')}</ul>`
-      + (BILLS.length ? `<p class="fine">1 € = ${fx.toFixed(2).replace('.', ',')} kr</p>` : '<p class="empty">No bills yet.</p>');
+      <table class="sw-tally">
+        <thead><tr><th class="sw-unit">kr</th>${rows.map(r => `<th scope="col" style="--pc:${r.x.color}">${esc(r.x.name)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${line('Spent', r => num(r.spent), 'equal')}
+          ${line('Paid', r => num(r.paid))}
+          ${line('Shared', r => signed(r.mine), 'sub')}
+          ${line('Direct', r => signed(r.direct))}
+          ${line('Balance', r => signed(r.final), 'total')}
+        </tbody>
+      </table>
+      <div ${mediaAttr(photos)}>
+        <h3 class="sw-h">Split 4 ways <span>${krTxt(sharedTotal)} · ${krTxt(sharedTotal / PEOPLE.length)} each</span></h3>
+        ${billList(shared)}
+        ${direct.length ? `<h3 class="sw-h">Direct</h3>${billList(direct)}` : ''}
+      </div>
+      <p class="fine">1 € = ${fx.toFixed(2).replace('.', ',')} kr</p>`;
   }
+
+  // A payment as a Swish QR code: number, amount and message all prefilled and locked
+  // ("C<number>;<amount>;<message>;0", Swish's own prefilled format). A phone can't scan
+  // its own screen, so phones also get a button that opens the Swish app with the same.
+  const qrBox = $('#qrBox');
+  function openQr(from, to, kr) {
+    const payee = person(to).swish.replace(/\D/g, ''), msg = `Emma i Helsingfors – ${person(from).name}`;
+    const qr = qrcode(0, 'M');
+    qr.addData(`C${payee};${kr.toFixed(2).replace('.', ',')};${encodeURIComponent(msg)};0`);
+    qr.make();
+    $('#qrCode').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+    $('#qrTitle').innerHTML = `${chip(from)}<span class="sw-arrow">→</span>${chip(to)}`;
+    $('#qrAmt').textContent = krTxt(kr);
+    const data = { version: 1, payee: { value: payee }, amount: { value: Math.round(kr * 100) / 100 }, message: { value: msg } };
+    $('#qrOpen').href = 'swish://payment?data=' + encodeURIComponent(JSON.stringify(data));
+    $('#qrOpen').hidden = !matchMedia('(pointer: coarse)').matches;
+    qrBox.showModal();
+  }
+  $('#swish').addEventListener('click', e => {
+    const b = e.target.closest('.sw-qr'); if (!b || typeof qrcode !== 'function') return;
+    openQr(b.dataset.from, b.dataset.to, +b.dataset.kr);
+  });
+  $('#qrClose').onclick = () => qrBox.close();
+  qrBox.addEventListener('click', e => { if (e.target === qrBox) qrBox.close(); });
 
   // ── bingo ──────────────────────────────────────────────
   // A popup over the plan. Everyone types a secret number; it seeds their own 5×5 card:

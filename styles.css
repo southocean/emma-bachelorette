@@ -1033,3 +1033,35 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 .sw-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .brand { gap: 10px; }
 .brand > div { flex: 1 1 auto; min-width: 0; }
+
+/* the Swish QR: a small button on each payment, a popup with the code */
+.sw-qr {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center; padding: 0; margin-left: 2px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.sw-qr:hover { border-color: var(--accent); color: var(--accent); }
+.qr-box { width: min(340px, calc(100vw - 32px)); }
+.qr-box .modal-head h2 { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.qr-amt { margin: 4px 0 10px; text-align: center; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.qr-code { background: #fff; border-radius: 12px; padding: 8px; }
+.qr-code svg { display: block; width: 100%; height: auto; }
+.qr-open {
+  display: block; margin-top: 12px; padding: 12px; border-radius: 999px; text-align: center; text-decoration: none;
+  background: var(--accent); color: #fff; font-weight: 700;
+}
+.sw-row b, .sw-amt, .sw-p span { white-space: nowrap; }
+@media (max-width: 420px) { .sw-row .sw-kr { display: none; } .sw-row { gap: 6px; } }
+
+/* the tally: everyone spends the same on the shared bills; direct bills make up the rest */
+.sw-tally { width: 100%; border-collapse: collapse; margin: 4px 0 16px; font-size: 13px; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.sw-tally th, .sw-tally td { padding: 6px 2px; text-align: right; white-space: nowrap; }
+.sw-tally thead th { font-size: 12.5px; color: var(--ink); border-bottom: 3px solid var(--pc); padding-bottom: 4px; }
+.sw-tally tbody th { text-align: left; font-weight: 500; color: var(--ink-2); width: 60px; }
+.sw-tally tr.equal td { font-weight: 700; color: var(--ink); }
+.sw-tally tr.sub td, .sw-tally tr.sub th { border-bottom: 1px solid var(--line); }
+.sw-tally tr.total td, .sw-tally tr.total th { font-weight: 700; color: var(--ink); border-top: 2px solid var(--ink); }
+.sw-tally td { color: var(--ink-2); }
+.sw-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 14px 0 8px; font-family: 'Fraunces', Georgia, serif; font-size: 16px; }
+.sw-h span { font-family: 'DM Sans', system-ui, sans-serif; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+@media (max-width: 420px) { .sw-tally { font-size: 11.5px; } .sw-tally tbody th { width: 52px; } }
+.sw-tally thead th.sw-unit { text-align: left; font-weight: 500; color: var(--ink-2); border-bottom-color: transparent; }
