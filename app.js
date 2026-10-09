@@ -1253,20 +1253,26 @@
       <p class="fine">1 € = ${fx.toFixed(2).replace('.', ',')} kr</p>`;
   }
 
-  // A payment as a Swish QR code: number, amount and message all prefilled and locked
-  // ("C<number>;<amount>;<message>;0", Swish's own prefilled format). A phone can't scan
-  // its own screen, so phones also get a button that opens the Swish app with the same.
+  // A payment as Swish's own payment link (https://app.swish.nu/1/p/sw/), with the number,
+  // amount and message prefilled and locked. The QR code holds the link, so a phone camera
+  // or Swish's scanner opens it; on a phone, Open Swish follows the same link.
+  // Swish wants the number as an alias: country code, no leading zero (46725645852), the
+  // amount with a decimal point, and a short plain message.
   const qrBox = $('#qrBox');
+  const swishAlias = n => { const d = String(n).replace(/\D/g, '').replace(/^00/, ''); return d.startsWith('46') ? d : d.startsWith('0') ? '46' + d.slice(1) : d; };
+  function swishLink(to, kr, msg) {
+    const q = new URLSearchParams({ sw: swishAlias(person(to).swish), amt: kr.toFixed(2), msg: msg.replace(/[^\w åäöÅÄÖ.,!?:-]/g, '').slice(0, 50) });
+    return 'https://app.swish.nu/1/p/sw/?' + q.toString().replace(/\+/g, '%20');
+  }
   function openQr(from, to, kr) {
-    const payee = person(to).swish.replace(/\D/g, ''), msg = `Emma i Helsingfors – ${person(from).name}`;
+    const link = swishLink(to, kr, `Emma i Helsingfors - ${person(from).name}`);
     const qr = qrcode(0, 'M');
-    qr.addData(`C${payee};${kr.toFixed(2).replace('.', ',')};${encodeURIComponent(msg)};0`);
+    qr.addData(link);
     qr.make();
     $('#qrCode').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
     $('#qrTitle').innerHTML = `${chip(from)}<span class="sw-arrow">→</span>${chip(to)}`;
     $('#qrAmt').textContent = krTxt(kr);
-    const data = { version: 1, payee: { value: payee }, amount: { value: Math.round(kr * 100) / 100 }, message: { value: msg } };
-    $('#qrOpen').href = 'swish://payment?data=' + encodeURIComponent(JSON.stringify(data));
+    $('#qrOpen').href = link;
     $('#qrOpen').hidden = !matchMedia('(pointer: coarse)').matches;
     qrBox.showModal();
   }
