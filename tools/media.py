@@ -11,6 +11,11 @@ Prints the `media: [...]` line for that place in data.js.
 import os
 import sys
 from PIL import Image, ImageOps
+try:
+    import pillow_heif  # iPhone HEIC photos: pip install pillow-heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 FULL, THUMB = 1600, 360

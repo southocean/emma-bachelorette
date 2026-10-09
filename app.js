@@ -974,15 +974,17 @@
   // shows it as that activity's row of square thumbnails, and a tap on either opens the
   // viewer: full screen, swipe or arrows, a strip of thumbnails at the bottom, Save.
   const isVideo = m => m.type === 'video' || /\.(mp4|webm|mov|m4v)$/i.test(m.src);
-  // tools/media.py writes media/<id>/thumbs/<name> next to each photo
-  const thumbOf = src => src.replace(/^(media\/(?:.+\/)?)([^/]+)$/, '$1thumbs/$2');
+  // media/<id>/thumbs/<name>.jpg sits next to each photo and clip (tools/media.py)
+  const thumbOf = src => src.replace(/^(media\/(?:.+\/)?)([^/]+?)(\.[^./]+)?$/, '$1thumbs/$2.jpg');
   const mediaOf = x => ((x && x.media) || []).map(m => typeof m === 'string' ? { src: m } : m)
-    .filter(m => m && m.src).map(m => ({ ...m, thumb: m.thumb || (isVideo(m) ? '' : thumbOf(m.src)) }));
+    .filter(m => m && m.src).map(m => ({ ...m, thumb: m.thumb || thumbOf(m.src) }));
+  const PLAY = '<span class="mc-play" aria-hidden="true">▶</span>';
   const fullHTML = m => isVideo(m)
-    ? `<video src="${esc(m.src)}#t=0.1" muted playsinline preload="metadata"></video><span class="mc-play" aria-hidden="true">▶</span>`
+    ? `<video src="${esc(m.src)}#t=0.1" muted playsinline preload="metadata"></video>${PLAY}`
     : `<img src="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" decoding="async">`;
-  // a square thumbnail, or the photo itself (cropped by CSS) if there is no thumbnail file
-  const thumbHTML = m => isVideo(m) ? fullHTML(m)
+  // a square thumbnail (a clip's has a ▶), or the photo itself, cropped by CSS, if there is none
+  const thumbHTML = m => isVideo(m)
+    ? `<img src="${esc(m.thumb)}" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('video'),{src:'${esc(m.src)}#t=0.1',muted:true,playsInline:true,preload:'metadata'}))">${PLAY}`
     : `<img src="${esc(m.thumb || m.src)}" data-full="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=this.dataset.full">`;
   const mediaAttr = list => `data-media="${esc(JSON.stringify(list))}"`;
   function carouselHTML(list) {
@@ -1024,6 +1026,40 @@
     const mc = dEl.querySelector('.mc.many'); if (!mc) return;
     e.preventDefault(); mcStep(mc, e.key === 'ArrowLeft' ? -1 : 1);
   });
+  // A mouse can swipe too: drag a card's photos (or the viewer's) and they follow the
+  // pointer, then settle on the next or previous one. A click that didn't move stays a
+  // click (it opens the viewer); the click that ends a drag opens nothing.
+  let mdrag = null;
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    const tr = e.target.closest('.mc-track, .vw-track');
+    if (!tr || tr.children.length < 2) return;
+    // a clip swipes like a photo, except on its own control bar (play, seek, volume)
+    const v = e.target.closest('video[controls]');
+    if (v && e.clientY > v.getBoundingClientRect().bottom - 60) return;
+    mdrag = { tr, x0: e.clientX, left: tr.scrollLeft, moved: false, from: tr === vwTrack ? vwIndex() : mcIndex(tr) };
+  });
+  addEventListener('pointermove', e => {
+    if (!mdrag) return;
+    const dx = e.clientX - mdrag.x0;
+    if (!mdrag.moved) { if (Math.abs(dx) < 6) return; mdrag.moved = true; mdrag.tr.classList.add('dragging'); }
+    mdrag.tr.scrollLeft = mdrag.left - dx;
+  });
+  addEventListener('pointerup', e => {
+    const d = mdrag; mdrag = null;
+    if (!d || !d.moved) return;
+    const dx = e.clientX - d.x0, step = Math.abs(dx) > 40 ? (dx < 0 ? 1 : -1) : 0;
+    if (d.tr === vwTrack) { d.tr.classList.remove('dragging'); vwTo(d.from + step); }
+    else {
+      const slides = d.tr.children, to = slides[Math.max(0, Math.min(slides.length - 1, d.from + step))];
+      d.tr.scrollTo({ left: to.offsetLeft, behavior: 'smooth' });
+      setTimeout(() => { d.tr.classList.remove('dragging'); if (Math.abs(d.tr.scrollLeft - to.offsetLeft) > 2) d.tr.scrollTo({ left: to.offsetLeft, behavior: 'instant' }); }, 400);
+    }
+    const eat = ev => { ev.stopPropagation(); ev.preventDefault(); };
+    addEventListener('click', eat, { capture: true, once: true });
+    setTimeout(() => removeEventListener('click', eat, { capture: true }), 0);
+  });
+  document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.mc-track, .vw-track')) e.preventDefault(); });
   // a tap on any photo (a card strip, the Gallery, a receipt) opens the viewer on its list
   document.addEventListener('click', e => {
     const b = e.target.closest('.mc-slide, .gal-item, .sw-photo'); if (!b) return;
@@ -1106,7 +1142,8 @@
     const all = groups.flatMap(g => g.items.map(m => ({ ...m, cap: `${ACTUAL[g.day].label} · ${g.name}` })));
     // one row per activity; a longer one ends in a "+N" tile that unfolds the rest
     let k = 0;
-    $('#gallery').innerHTML = groups.length ? `<div class="story" ${mediaAttr(all)}>${groups.map(g => {
+    const drive = window.DRIVE ? `<a class="gal-drive" href="${esc(DRIVE)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#0f9d58" d="M8.6 3h6.8l7.2 12.4h-6.8z"/><path fill="#fbbc04" d="M8.6 3 1.4 15.4l3.4 5.9L12 8.9z"/><path fill="#4285f4" d="M4.8 21.3h14.4l3.4-5.9H8.2z"/></svg>All photos &amp; videos<span aria-hidden="true">↗</span></a>` : '';
+    $('#gallery').innerHTML = drive + (groups.length ? `<div class="story" ${mediaAttr(all)}>${groups.map(g => {
       const fold = g.items.length > GAL_ROW;
       return `
       <section class="st-group${fold ? ' folded' : ''}" style="--dc:${DAYC[g.day]}">
@@ -1116,7 +1153,7 @@
         <div class="gal">${g.items.map((m, j) => fold && j === GAL_ROW - 1
           ? `<button class="gal-item gal-more" data-i="${k++}" aria-label="${esc(g.name)}, ${g.items.length - j} more">${thumbHTML(m)}<span>+${g.items.length - j}</span></button>`
           : `<button class="gal-item" data-i="${k++}" aria-label="${esc(g.name)}, photo">${thumbHTML(m)}</button>`).join('')}</div>
-      </section>`; }).join('')}</div>` : '<p class="empty">Nothing here yet.</p>';
+      </section>`; }).join('')}</div>` : '<p class="empty">Nothing here yet.</p>');
   }
   const GAL_ROW = 5;
   $('#gallery').addEventListener('click', e => {

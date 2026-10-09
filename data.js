@@ -59,6 +59,7 @@ window.PLACES = [
       ['🫙', 'Everything goes in a jar: it pays the first round at karaoke'],
     ] }],
     tips: ['No alcohol on the tray: unlicensed sales are illegal in Finland.', 'Sell on the open square, not inside the mall.'],
+    media: ['media/bauchladen/IMG_2503.jpg', 'media/bauchladen/IMG_2505.jpg', 'media/bauchladen/tray-1.jpg', 'media/bauchladen/tray-2.jpg', 'media/bauchladen/tray-3.jpg', 'media/bauchladen/tray.jpg', 'media/bauchladen/tray-clip.mp4'],
   },
   {
     id: 'queem', name: 'Quê Em', venue: 'Kansakoulukatu 1, Kamppi', cat: 'eat', lat: 60.1682, lng: 24.9342, gq: 'Quê Em, Kansakoulukatu 1, 00100 Helsinki',
@@ -77,6 +78,7 @@ window.PLACES = [
       'tableonline.fi · 050 468 6661 · info@queem.fi',
     ],
     url: 'https://queem.fi/en/menu/brunch/',
+    media: ['media/queem/buffet-1.jpg', 'media/queem/buffet-2.jpg', 'media/queem/buffet-3.jpg'],
   },
   {
     id: 'activate', name: 'LED jump Activate Itis', venue: 'Activate, Itis shopping centre, Itäkeskus', cat: 'make', lat: 60.2107, lng: 25.0823, gq: 'Activate Itis, Itäkatu 1-7, 00930 Helsinki',
@@ -87,7 +89,7 @@ window.PLACES = [
     hours: [{ day: 'sat', open: '10:00', close: '22:00' }],
     tips: ['Book a slot online so the four of you play together.', '+358 50 375 6709 · itis@activategames.fi'],
     url: 'https://playactivate.fi/en/itis',
-    media: ['media/activate/187688.jpg', 'media/activate/187689.jpg', 'media/activate/187694.jpg', 'media/activate/187698.jpg', 'media/activate/187699.jpg'],
+    media: ['media/activate/IMG_7266.jpg', 'media/activate/IMG_7272.jpg', 'media/activate/led-game.jpg', 'media/activate/led-game-clip.mp4', 'media/activate/led-action-clip.mp4', 'media/activate/led-game-2-clip.mp4', 'media/activate/187688.jpg', 'media/activate/187689.jpg', 'media/activate/187694.jpg', 'media/activate/187698.jpg', 'media/activate/187699.jpg'],
   },
   {
     id: 'suomenlinna', name: 'Champagne spray & dance', venue: 'Suomenlinna sea fortress', cat: 'make', lat: 60.14009, lng: 24.98997, gq: 'Kuninkaanportti, Suomenlinna, 00190 Helsinki',
@@ -101,6 +103,7 @@ window.PLACES = [
     ],
     tips: ['Toilets and cafés are at the main quay only.', 'Shoes for wet rock.'],
     url: 'https://www.suomenlinna.fi/en/',
+    media: ['media/suomenlinna/IMG_7214.jpg', 'media/suomenlinna/dance.jpg', 'media/suomenlinna/dance-clip.mp4', 'media/suomenlinna/pop.jpg', 'media/suomenlinna/champagne.jpg', 'media/suomenlinna/champagne-clip.mp4'],
   },
   {
     id: 'allas', name: 'Bridal sauna', venue: 'Allas Sea Pool, Katajanokanlaituri 2a', cat: 'sauna', lat: 60.1671, lng: 24.95716, gq: 'Allas Sea Pool, Katajanokanlaituri 2a, 00160 Helsinki',
@@ -124,6 +127,7 @@ window.PLACES = [
       'Pools and saunas close at 20:40; ticket sales end at 20:00.',
     ],
     url: 'https://www.allaspool.fi/en/',
+    media: ['media/allas/IMG_2540.jpg', 'media/allas/sauna-clip.mp4'],
   },
   {
     id: 'saigonese', name: 'Lunch at Quán a Lợi', venue: 'The Saigonese Home Kitchen & Coffee, Lapinlahdenkatu 21', cat: 'eat', lat: 60.1674, lng: 24.9265, gq: 'The Saigonese Home Kitchen & Coffee, Lapinlahdenkatu 21, 00180 Helsinki',
@@ -134,6 +138,7 @@ window.PLACES = [
     tags: ['vegan phở', 'curry', 'steamed buns', 'summer rolls', 'Vietnamese coffee'],
     tips: ['Book 12:00 for four, when it opens.', '046 598 9104'],
     url: 'https://the-saigonese.com/food-menu/',
+    media: ['media/saigonese/IMG_7318.jpg'],
   },
   {
     id: 'populus', name: 'Karaoke', venue: 'Populus, Kallio', cat: 'night', lat: 60.18921, lng: 24.95507, gq: 'Karaokebar Populus, Aleksis Kiven katu 22, 00500 Helsinki',
@@ -208,11 +213,13 @@ window.PLACES = [
     ] }],
     tips: [],
     url: 'https://www.ravintola305.fi/en/',
+    media: ['media/r305/arrival-clip.mp4', 'media/r305/IMG_7223.jpg', 'media/r305/IMG_7227.jpg'],
   },
   {
     id: 'cafe', name: 'Morning coffee', venue: 'GTC Café, Ruoholahdenkatu 8', cat: 'eat', lat: 60.16575, lng: 24.92874, gq: 'GTC Café, Ruoholahdenkatu 8, 00180 Helsinki',
     hook: 'Coffee round the corner from the Airbnb',
     what: '', cost: '≈ €5', costPP: 5, time: '30 min', energy: 1, tips: [],
+    media: ['media/cafe/cafe-1.jpg', 'media/cafe/cafe-2.jpg', 'media/cafe/cafe-3.jpg'],
   },
 
   // logistics pins: on the map, but only as lines between activities in the plan
@@ -223,6 +230,7 @@ window.PLACES = [
     cost: 'Booked', costPP: 0, time: 'Fri night – Sun morning', energy: 1,
     journey: [['🚇', 'Kamppi metro', '6 min walk'], ['🍜', 'Quán a Lợi', 'same street'], ['🚉', 'Central Station', '18 min walk']],
     tips: ['Every metro line in the city stops at Kamppi.'],
+    media: ['media/home/IMG_2499.jpg', 'media/home/house-tour-clip.mp4'],
   },
   {
     id: 'ferry', name: 'Suomenlinna ferry', venue: 'Market Square (Kauppatori), east corner', cat: 'practical', lat: 60.1670, lng: 24.9536, gq: 'Suomenlinna Ferry, Helsinki',
@@ -688,7 +696,8 @@ window.ACTUAL = {
     label: 'Fri 2 Oct', title: 'Land',
     steps: [
       { end: '23:30', t: '22:35', go: 'Land at HEL · I/P train to Central Station', icon: '✈️', place: 'airport', open: true, costPP: 4.5, label: 'Airport train' },
-      { t: '23:30', go: 'Walk to the Airbnb · check in', icon: '🚶', place: 'trip-fri-1', open: true },
+      { t: '23:30', go: 'Walk to the Airbnb', icon: '🚶', place: 'trip-fri-1', open: true },
+      { t: '23:45', act: 'home', name: 'Check-in & house tour', do: 'The first look at our place.' },
     ],
   },
   sat: {
@@ -857,3 +866,6 @@ window.DARES = [
   "Get a stranger to take a photo of you and Emma",
   "Find someone else in Helsinki who is getting married this year"
 ];
+
+// Everything we shot, in full, in Tracy's Google Drive folder (a link at the top of the Gallery).
+window.DRIVE = 'https://drive.google.com/drive/folders/1kSTzNmMJs90AA_cHQBMQgAWYyyUyFiKM';

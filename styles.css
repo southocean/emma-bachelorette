@@ -1065,3 +1065,18 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 .sw-h span { font-family: 'DM Sans', system-ui, sans-serif; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
 @media (max-width: 420px) { .sw-tally { font-size: 11.5px; } .sw-tally tbody th { width: 52px; } }
 .sw-tally thead th.sw-unit { text-align: left; font-weight: 500; color: var(--ink-2); border-bottom-color: transparent; }
+
+/* the Drive folder with everything, above the storyline */
+.gal-drive {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; text-decoration: none;
+}
+.gal-drive:hover { border-color: var(--accent); }
+.gal-drive span { margin-left: auto; color: var(--ink-2); }
+.vw-thumbs button, .gal-item { position: relative; }
+.vw-thumbs .mc-play, .gal-item .mc-play { width: 26px; height: 26px; font-size: 10px; }
+/* a mouse drags the photo strips: no snapping while the photos follow the pointer */
+.mc-track.dragging, .vw-track.dragging { scroll-snap-type: none; cursor: grabbing; }
+.mc-track.dragging .mc-slide, .vw-track.dragging .vw-slide { cursor: grabbing; }
+.mc-slide img, .vw-slide img { -webkit-user-drag: none; user-select: none; }
+.vw-slide video { touch-action: pan-x pan-y; }
