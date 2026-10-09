@@ -735,7 +735,7 @@ window.BILLS = [
   { by: 'nam', what: 'Snacks for the tray', kr: 114.84, date: '2026-10-03', for: ['jane'], photo: 'media/bills/candy.jpg' },
   { by: 'tracy', what: 'Lunch at Quán a Lợi', kr: 906.95, date: '2026-10-03', photo: 'media/bills/saigonese.jpg' },
   { by: 'nam', what: 'Allas', kr: 1111.39, date: '2026-10-03', photo: 'media/bills/allas.jpg' },
-  { by: 'nam', what: 'Wine & tip at 305', eur: 90, date: '2026-10-03', for: ['tracy', 'jane', 'emma'] }, // €30 each
+  { by: 'nam', what: 'Wine & tip at 305', eur: 100, date: '2026-10-03', for: ['tracy', 'jane', 'emma'] }, // €100 between the girls
   { by: 'jane', what: 'LED jump', kr: 1059.83, date: '2026-10-04' },
 ];
 window.FX = { sekPerEur: 11.3636 }; // the rate on our cards that weekend
