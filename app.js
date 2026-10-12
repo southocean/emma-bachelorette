@@ -1239,7 +1239,7 @@
         const done = paid >= t.kr - 0.5, left = Math.round((t.kr - paid) * 100) / 100;
         const receipts = made.filter(p => p.photo).map(p => ({ src: p.photo, thumb: p.photo, alt: `${person(p.from).name} → ${person(p.to).name}` }));
         const action = done
-          ? `<button class="sw-done${receipts.length ? ' sw-photo' : ''}" data-i="0" aria-label="Paid${receipts.length ? ', see the receipt' : ''}" title="Paid${made[0] && made[0].date ? ' ' + fmtDate(made[0].date) : ''}">✓</button>`
+          ? `<button class="sw-done${receipts.length ? ' sw-photo' : ''}" data-i="0" aria-label="Paid${receipts.length ? ', see the receipt' : ''}" title="Paid${made[0] && made[0].date ? ' ' + fmtDate(made[0].date) : ''}"><span class="sw-q" aria-hidden="true">${QR_ICON}</span><span class="sw-t" aria-hidden="true">✓</span></button>`
           : person(t.to).swish ? `<button class="sw-qr" data-from="${t.from}" data-to="${t.to}" data-kr="${left}" aria-label="Swish QR code" title="Swish QR code">${QR_ICON}</button>` : '';
         return `<div class="sw-row${done ? ' paid' : ''}"${receipts.length ? ` ${mediaAttr(receipts)}` : ''}>${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(done ? t.kr : left)}</b><span class="sw-kr">${eurTxt((done ? t.kr : left) / fx)}</span>${action}</div>`;
       }).join('')
@@ -1705,6 +1705,17 @@
   // ── boot ───────────────────────────────────────────────
   renderDays();
   renderBudget(); renderGallery(); renderSwish();
+  // A paid row starts out like the others; a second after it comes into view, green sweeps
+  // across it and the tick pops in. Every time the Swish tab opens, it plays again.
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const paidIO = new IntersectionObserver(entries => entries.forEach(en => {
+      const row = en.target;
+      clearTimeout(row._go);
+      if (en.isIntersecting) row._go = setTimeout(() => row.classList.add('go'), 1000);
+      else row.classList.remove('go');
+    }));
+    document.querySelectorAll('#swish .sw-row.paid').forEach(r => paidIO.observe(r));
+  } else document.querySelectorAll('#swish .sw-row.paid').forEach(r => r.classList.add('go'));
   placeForLayout();
   setDay('sat');
   playLockup();

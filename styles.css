@@ -1008,8 +1008,8 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 /* ── swish ── */
 .pc { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--ink); }
 .pc::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); flex: none; }
-.sw-pay { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; margin-bottom: 10px; }
-.sw-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sw-pay { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; margin-bottom: 10px; }
+.sw-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .sw-row:last-child { border-bottom: 0; }
 .sw-arrow { color: var(--ink-2); }
 .sw-row b { margin-left: auto; font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -1080,13 +1080,41 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 .mc-track.dragging .mc-slide, .vw-track.dragging .vw-slide { cursor: grabbing; }
 .mc-slide img, .vw-slide img { -webkit-user-drag: none; user-select: none; }
 .vw-slide video { touch-action: pan-x pan-y; }
-/* a payment that has been made: green, with a tick that opens the receipt */
-.sw-row.paid b, .sw-row.paid .sw-kr { color: #1f9e5a; }
+/* a payment that has been made. It starts out like the others; on "go", green sweeps across
+   the row from the left, then the QR icon shrinks away and a tick pops in with a ring */
+.sw-pay { overflow: hidden; }
+.sw-row.paid { position: relative; margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
+.sw-row.paid::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, #1f9e5a 13%, var(--surface));
+  transform: scaleX(0); transform-origin: left center; transition: transform .9s cubic-bezier(.65, 0, .25, 1);
+}
+.sw-row.paid > * { position: relative; z-index: 1; }
+.sw-row.paid b, .sw-row.paid .sw-kr { transition: color .5s ease .55s; }
+.sw-row.paid.go::before { transform: scaleX(1); }
+.sw-row.paid.go b, .sw-row.paid.go .sw-kr { color: #1f9e5a; }
+/* the button: the QR button's look until the tick takes over */
 .sw-row .sw-done {
   flex: none; width: 32px; height: 32px; margin-left: 2px; padding: 0; display: grid; place-items: center; overflow: visible;
-  border: 0; border-radius: 50%; background: #1f9e5a; color: #fff; font-size: 17px; font-weight: 700; line-height: 1; cursor: default;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: default;
+  transition: background .25s ease .9s, border-color .25s ease .9s, border-radius .25s ease .9s;
 }
 .sw-row .sw-done.sw-photo { cursor: zoom-in; }
-.sw-row .sw-done.sw-photo:hover { box-shadow: 0 0 0 3px color-mix(in srgb, #1f9e5a 30%, transparent); }
-.sw-pay { overflow: hidden; }
-.sw-row.paid { background: color-mix(in srgb, #1f9e5a 10%, var(--surface)); margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
+.sw-done .sw-q, .sw-done .sw-t { grid-area: 1 / 1; display: grid; place-items: center; }
+.sw-done .sw-q { transition: transform .22s ease .85s, opacity .22s ease .85s; }
+.sw-done .sw-t { color: #fff; font-size: 18px; font-weight: 800; line-height: 1; transform: scale(0); }
+.sw-row.paid.go .sw-done { background: #1f9e5a; border-color: #1f9e5a; border-radius: 50%; }
+.sw-row.paid.go .sw-done .sw-q { transform: scale(0); opacity: 0; }
+.sw-row.paid.go .sw-done .sw-t { animation: swTick .6s cubic-bezier(.2, .9, .3, 1.4) 1.05s both; }
+.sw-row.paid.go .sw-done::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #1f9e5a; pointer-events: none;
+  opacity: 0; /* hidden until the tick has popped: no backwards fill, or its first frame shows during the wait */
+  animation: swRing .7s ease-out 1.25s forwards;
+}
+.sw-row.paid.go .sw-done.sw-photo:hover { box-shadow: 0 0 0 3px color-mix(in srgb, #1f9e5a 30%, transparent); }
+@keyframes swTick { 0% { transform: scale(0) rotate(-25deg); } 55% { transform: scale(1.45) rotate(8deg); } 78% { transform: scale(.88) rotate(-3deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes swRing { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(2.1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sw-row.paid::before, .sw-row.paid b, .sw-row.paid .sw-kr, .sw-row .sw-done, .sw-done .sw-q { transition: none; }
+  .sw-row.paid.go .sw-done .sw-t { animation: none; transform: none; }
+  .sw-row.paid.go .sw-done::after { animation: none; opacity: 0; }
+}
