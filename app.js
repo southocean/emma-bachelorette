@@ -1232,8 +1232,17 @@
     }).join('')}</ul>`;
     const line = (label, f, cls = '') => `<tr class="${cls}"><th scope="row">${label}</th>${rows.map(r => `<td>${f(r)}</td>`).join('')}</tr>`;
     $('#swish').innerHTML = `
-      <div class="sw-pay">${pay.length ? pay.map(t => `<div class="sw-row">${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(t.kr)}</b><span class="sw-kr">${eurTxt(t.kr / fx)}</span>${person(t.to).swish
-          ? `<button class="sw-qr" data-from="${t.from}" data-to="${t.to}" data-kr="${t.kr}" aria-label="Swish QR code" title="Swish QR code">${QR_ICON}</button>` : ''}</div>`).join('')
+      <div class="sw-pay">${pay.length ? pay.map(t => {
+        // a payment that has been made (data.js PAYMENTS) shows done: a tick in place of the QR
+        // code, and the tick opens the receipt; a part payment leaves the rest to pay
+        const made = PAYMENTS.filter(p => p.from === t.from && p.to === t.to), paid = made.reduce((s, p) => s + p.kr, 0);
+        const done = paid >= t.kr - 0.5, left = Math.round((t.kr - paid) * 100) / 100;
+        const receipts = made.filter(p => p.photo).map(p => ({ src: p.photo, thumb: p.photo, alt: `${person(p.from).name} → ${person(p.to).name}` }));
+        const action = done
+          ? `<button class="sw-done${receipts.length ? ' sw-photo' : ''}" data-i="0" aria-label="Paid${receipts.length ? ', see the receipt' : ''}" title="Paid${made[0] && made[0].date ? ' ' + fmtDate(made[0].date) : ''}">✓</button>`
+          : person(t.to).swish ? `<button class="sw-qr" data-from="${t.from}" data-to="${t.to}" data-kr="${left}" aria-label="Swish QR code" title="Swish QR code">${QR_ICON}</button>` : '';
+        return `<div class="sw-row${done ? ' paid' : ''}"${receipts.length ? ` ${mediaAttr(receipts)}` : ''}>${chip(t.from)}<span class="sw-arrow" aria-label="pays">→</span>${chip(t.to)}<b>${krTxt(done ? t.kr : left)}</b><span class="sw-kr">${eurTxt((done ? t.kr : left) / fx)}</span>${action}</div>`;
+      }).join('')
         : '<p class="sw-square">All square ✓</p>'}</div>
       <table class="sw-tally">
         <thead><tr><th class="sw-unit">kr</th>${rows.map(r => `<th scope="col" style="--pc:${r.x.color}">${esc(r.x.name)}</th>`).join('')}</tr></thead>

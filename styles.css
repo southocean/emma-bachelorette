@@ -1080,3 +1080,13 @@ dialog #confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; point
 .mc-track.dragging .mc-slide, .vw-track.dragging .vw-slide { cursor: grabbing; }
 .mc-slide img, .vw-slide img { -webkit-user-drag: none; user-select: none; }
 .vw-slide video { touch-action: pan-x pan-y; }
+/* a payment that has been made: green, with a tick that opens the receipt */
+.sw-row.paid b, .sw-row.paid .sw-kr { color: #1f9e5a; }
+.sw-row .sw-done {
+  flex: none; width: 32px; height: 32px; margin-left: 2px; padding: 0; display: grid; place-items: center; overflow: visible;
+  border: 0; border-radius: 50%; background: #1f9e5a; color: #fff; font-size: 17px; font-weight: 700; line-height: 1; cursor: default;
+}
+.sw-row .sw-done.sw-photo { cursor: zoom-in; }
+.sw-row .sw-done.sw-photo:hover { box-shadow: 0 0 0 3px color-mix(in srgb, #1f9e5a 30%, transparent); }
+.sw-pay { overflow: hidden; }
+.sw-row.paid { background: color-mix(in srgb, #1f9e5a 10%, var(--surface)); margin: 0 -14px; padding-left: 14px; padding-right: 14px; }

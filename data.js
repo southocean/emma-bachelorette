@@ -749,6 +749,10 @@ window.BILLS = [
   { by: 'jane', what: 'LED jump', kr: 1059.83, date: '2026-10-04' },
 ];
 window.FX = { sekPerEur: 11.3636 }; // the rate on our cards that weekend
+// Swishes made to settle up: a payment that covers what someone owes shows as done.
+window.PAYMENTS = [
+  { from: 'jane', to: 'nam', kr: 238.04, date: '2026-10-09', photo: 'media/bills/swish-jane.jpg' },
+];
 
 // Small, cheap rituals that make the trip. No tab of their own any more; search still finds them.
 window.MOMENTS = [
