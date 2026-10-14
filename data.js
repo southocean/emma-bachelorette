@@ -753,6 +753,7 @@ window.FX = { sekPerEur: 11.3636 }; // the rate on our cards that weekend
 window.PAYMENTS = [
   { from: 'jane', to: 'nam', kr: 238.04, date: '2026-10-09', photo: 'media/bills/swish-jane.jpg' },
   { from: 'tracy', to: 'nam', kr: 276.08, date: '2026-10-13', photo: 'media/bills/swish-tracy.jpg' },
+  { from: 'emma', to: 'nam', kr: 1901.28, date: '2026-10-13', photo: 'media/bills/swish-emma.jpg' }, // sent by her fiancé
 ];
 
 // Small, cheap rituals that make the trip. No tab of their own any more; search still finds them.
